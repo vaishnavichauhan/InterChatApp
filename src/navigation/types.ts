@@ -19,5 +19,8 @@ export type RootStackParamList = {
   CreateGroup: undefined;
   FileViewer: { file: any };
   UserMaster: undefined;
+  CreateUser: undefined;
+  UserTypeMaster: undefined;
   DepartmentMaster: undefined;
+  CloudStorageMaster: undefined;
 };

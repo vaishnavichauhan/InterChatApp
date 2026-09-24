@@ -207,3 +207,77 @@ export const LayersIcon: React.FC<IconProps> = ({ size = 20, color = '#0056cf' }
   </Svg>
 );
 
+export const EditIcon: React.FC<IconProps> = ({ size = 18, color = '#4f46e5' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </Svg>
+);
+
+export const CalendarIcon: React.FC<IconProps> = ({ size = 16, color = '#94a3b8' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={3} y={4} width={18} height={18} rx={2} ry={2} />
+    <Line x1={16} y1={2} x2={16} y2={6} />
+    <Line x1={8} y1={2} x2={8} y2={6} />
+    <Line x1={3} y1={10} x2={21} y2={10} />
+  </Svg>
+);
+
+export const ShieldUserIcon: React.FC<IconProps> = ({ size = 18, color = '#7c3aed' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <Circle cx={12} cy={9} r={2.5} />
+    <Path d="M8 15a4 4 0 0 1 8 0" />
+  </Svg>
+);
+
+export const RefreshIcon: React.FC<IconProps> = ({ size = 18, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19" />
+  </Svg>
+);
+
+export const PhoneIcon: React.FC<IconProps> = ({ size = 16, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </Svg>
+);
+
+export const BanIcon: React.FC<IconProps> = ({ size = 16, color = '#ef4444' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={10} />
+    <Line x1={4.93} y1={4.93} x2={19.07} y2={19.07} />
+  </Svg>
+);
+
+export const ClockIcon: React.FC<IconProps> = ({ size = 16, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={10} />
+    <Polyline points="12 6 12 12 16 14" />
+  </Svg>
+);
+
+export const CrownIcon: React.FC<IconProps> = ({ size = 16, color = '#7c3aed' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z" />
+  </Svg>
+);
+
+export const HardDriveIcon: React.FC<IconProps> = ({ size = 18, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Line x1="22" y1="12" x2="2" y2="12" />
+    <Path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    <Line x1="6" y1="16" x2="6.01" y2="16" />
+    <Line x1="10" y1="16" x2="10.01" y2="16" />
+  </Svg>
+);
+
+export const FolderIcon: React.FC<IconProps> = ({ size = 18, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </Svg>
+);
+
+
+
+

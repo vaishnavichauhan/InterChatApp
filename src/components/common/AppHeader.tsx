@@ -140,7 +140,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceSubtle,
+    borderWidth:1.5,
+    borderColor:colors.surfaceSubtle,
+    // backgroundColor: colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -187,9 +189,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   customTitle: {
-    fontSize: fontSizes.md,
+    fontSize: fontSizes.lg,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
+    textAlign:'center'
   },
   subtitleText: {
     fontSize: fontSizes.tiny,

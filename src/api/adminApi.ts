@@ -30,3 +30,39 @@ export const fetchAuditLogs = async (userId: number | null = null) => {
   }
   return apiClient.get('/admin/audit-logs');
 };
+
+export const updateUserByAdmin = async (id: number, data: any) => {
+  return apiClient.put(`/admin/user/${id}`, data);
+};
+
+export const createUserByAdmin = async (data: any) => {
+  return apiClient.post('/admin/create-user', data);
+};
+
+export const getUserTypes = async () => {
+  return apiClient.get('/usertypes/all');
+};
+
+export const createUserType = async (data: any) => {
+  return apiClient.post('/usertypes/add', data);
+};
+
+export const updateUserType = async (id: number, data: any) => {
+  return apiClient.put(`/usertypes/update/${id}`, data);
+};
+
+export const deleteUserType = async (id: number) => {
+  return apiClient.delete(`/usertypes/delete/${id}`);
+};
+
+export const getStorageConfig = async () => {
+  return apiClient.get('/admin/storage-config');
+};
+
+export const saveStorageConfig = async (data: any) => {
+  return apiClient.post('/admin/storage-config', data);
+};
+
+export const testStorageConnection = async (data: any) => {
+  return apiClient.post('/admin/storage-config/test', data);
+};

@@ -10,7 +10,10 @@ import { NewChatScreen } from '../screens/chat/NewChatScreen';
 import { CreateGroupScreen } from '../screens/chat/CreateGroupScreen';
 import { FileViewerScreen } from '../screens/chat/FileViewerScreen';
 import { UserMasterScreen } from '../screens/admin/UserMasterScreen';
+import { CreateUserScreen } from '../screens/admin/CreateUserScreen';
+import { UserTypeMasterScreen } from '../screens/admin/UserTypeMasterScreen';
 import { DepartmentMasterScreen } from '../screens/admin/DepartmentMasterScreen';
+import { CloudStorageMasterScreen } from '../screens/admin/CloudStorageMasterScreen';
 import { useAuthStore } from '../store/authStore';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
 import { MessagesSquareIcon } from '../components/icons/SvgIcons';
@@ -64,7 +67,10 @@ export const RootNavigator = () => {
               options={{ presentation: 'fullScreenModal' }}
             />
             <Stack.Screen name="UserMaster" component={UserMasterScreen} />
+            <Stack.Screen name="CreateUser" component={CreateUserScreen} />
+            <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
             <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
+            <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
           </>
         )}
       </Stack.Navigator>

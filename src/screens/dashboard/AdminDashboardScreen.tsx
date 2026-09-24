@@ -99,7 +99,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       icon: ShieldCheckIcon,
       iconColor: '#7c3aed',
       bgColor: '#f3e8ff',
-      onPress: () => navigation.navigate('UserMaster'),
+      onPress: () => navigation.navigate('UserTypeMaster'),
     },
     {
       id: 'cloud_storage',
@@ -108,7 +108,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       icon: CloudIcon,
       iconColor: '#d97706',
       bgColor: '#fffbeb',
-      onPress: () => {},
+      onPress: () => navigation.navigate('CloudStorageMaster'),
     }
   ];
 
@@ -215,7 +215,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             </View>
           </View>
 
-          <View style={[styles.kpiCard, shadows.sm]}>
+          <TouchableOpacity
+            style={[styles.kpiCard, shadows.sm]}
+            onPress={() => navigation.navigate('UserTypeMaster')}
+            activeOpacity={0.7}
+          >
             <View style={[styles.kpiIconWrap, { backgroundColor: '#f3e8ff' }]}>
               <ShieldCheckIcon size={20} color="#7c3aed" />
             </View>
@@ -223,7 +227,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
               <Text style={styles.kpiLabel}>USER ROLES</Text>
               <Text style={[styles.kpiValue, { color: '#7c3aed' }]}>{totalUserTypes}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Enterprise Administration Masters — Dropdown Container */}
