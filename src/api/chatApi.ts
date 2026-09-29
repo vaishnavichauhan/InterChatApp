@@ -48,8 +48,9 @@ export const getGroupMembers = async (conversationId: number) => {
   return res.data;
 };
 
-export const searchCoworkers = async (q: string) => {
-  const res = await apiClient.get(`/chat/users/search?q=${encodeURIComponent(q)}`);
+export const searchCoworkers = async (q: string, departmentId?: number | null) => {
+  const deptQuery = departmentId ? `&departmentId=${departmentId}` : '';
+  const res = await apiClient.get(`/chat/users/search?q=${encodeURIComponent(q)}${deptQuery}`);
   return res.data;
 };
 

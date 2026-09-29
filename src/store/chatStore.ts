@@ -43,6 +43,9 @@ export interface Attachment {
   mime_type: string;
   storage_provider?: string;
   cloud_key?: string;
+  attachmentId?: number;
+  file_name?: string;
+  file_type?: string;
 }
 
 export interface ChatMessage {
@@ -58,10 +61,15 @@ export interface ChatMessage {
   created_at: string;
   attachments?: Attachment[];
   attachment_id?: number | null;
+  attachmentId?: number | null;
   original_name?: string | null;
+  file_name?: string | null;
   stored_name?: string | null;
   file_size?: number | null;
   mime_type?: string | null;
+  file_type?: string | null;
+  message_type?: string;
+  is_attachment_restricted?: boolean;
 }
 
 export interface TypingUser {
@@ -193,13 +201,56 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (partialPayload) => {
     const active = get().activeConversation;
     if (!active) return false;
+    const user = useAuthStore.getState().user;
 
     try {
       get().emitTypingStop();
-      await sendChatMessage({
+      const res = await sendChatMessage({
         conversationId: active.id,
         ...partialPayload,
       });
+
+      const rawMsg = res?.data || res?.message || res;
+      if (rawMsg && (rawMsg.id || rawMsg.content || rawMsg.message_text)) {
+        const normalized: ChatMessage = {
+          ...rawMsg,
+          id: rawMsg.id || Date.now(),
+          conversation_id: Number(rawMsg.conversation_id || rawMsg.conversationId || active.id),
+          sender_id: Number(rawMsg.sender_id || rawMsg.senderId || user?.id || 0),
+          sender_name: rawMsg.sender_name || user?.name || user?.username,
+          sender_username: rawMsg.sender_username || user?.username,
+          message_text: rawMsg.message_text || rawMsg.content || partialPayload.messageText || '',
+          created_at: rawMsg.created_at || new Date().toISOString(),
+          attachments: rawMsg.attachments || [],
+        };
+
+        set((state) => {
+          const exists = state.messages.some((m) => m.id === normalized.id);
+          const newMessages = exists ? state.messages : [...state.messages, normalized];
+
+          const updatedConversations = state.conversations.map((c) => {
+            if (Number(c.id) === Number(active.id)) {
+              return {
+                ...c,
+                last_message:
+                  normalized.message_text ||
+                  (normalized.original_name ? `📎 ${normalized.original_name}` : 'Message'),
+                last_message_at: normalized.created_at,
+              };
+            }
+            return c;
+          });
+
+          return {
+            messages: newMessages,
+            conversations: sortConversations(updatedConversations),
+          };
+        });
+      } else {
+        // Fallback: reload messages from server
+        await get().loadMessages(active.id);
+      }
+
       return true;
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -234,8 +285,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setupSocketListeners: () => {
-    const socket = getSocket();
     const user = useAuthStore.getState().user;
+    const socket = getSocket(user?.id);
+
+    const handleConnect = () => {
+      const u = useAuthStore.getState().user;
+      if (u?.id) {
+        socket.emit('user:online', u.id);
+      }
+      const act = get().activeConversation;
+      if (act?.id) {
+        socket.emit('conversation:join', act.id);
+      }
+    };
+
+    socket.off('connect', handleConnect);
+    socket.on('connect', handleConnect);
 
     if (user?.id) {
       socket.emit('user:online', user.id);
@@ -247,23 +312,84 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
 
     socket.off('message:new');
-    socket.on('message:new', (newMsg: ChatMessage) => {
+    socket.on('message:new', (newMsg: any) => {
+      if (!newMsg) return;
       const active = get().activeConversation;
+      const msgConvId = Number(newMsg.conversation_id || newMsg.conversationId);
 
-      // If this message belongs to the open chat, append it
-      if (active && Number(active.id) === Number(newMsg.conversation_id)) {
+      // Extract attachment information from all possible payload shapes
+      const rawAtt = Array.isArray(newMsg.attachments) && newMsg.attachments.length > 0
+        ? newMsg.attachments[0]
+        : null;
+      const attId = rawAtt?.id || rawAtt?.attachmentId || newMsg.attachmentId || newMsg.attachment_id || (newMsg.message_type === 'FILE' || newMsg.message_type === 'IMAGE' || newMsg.message_type === 'VIDEO' ? newMsg.id : undefined);
+      const attName = rawAtt?.original_name || rawAtt?.file_name || newMsg.file_name || newMsg.original_name || (newMsg.message_type === 'FILE' ? 'Document' : '');
+      const attMime = rawAtt?.mime_type || rawAtt?.file_type || newMsg.file_type || newMsg.mime_type || '';
+      const attSize = rawAtt?.file_size || newMsg.file_size || 0;
+
+      const hasAttachment = Boolean(
+        attName ||
+        attId ||
+        newMsg.message_type === 'FILE' ||
+        newMsg.message_type === 'IMAGE' ||
+        newMsg.message_type === 'VIDEO'
+      );
+
+      const normalizedAttachments = rawAtt
+        ? [{
+            ...rawAtt,
+            id: rawAtt.id || attId || newMsg.id,
+            original_name: rawAtt.original_name || attName || 'Document',
+            mime_type: rawAtt.mime_type || attMime || '',
+            file_size: rawAtt.file_size || attSize || 0,
+          }]
+        : hasAttachment
+        ? [{
+            id: attId || newMsg.id,
+            message_id: Number(newMsg.id),
+            original_name: attName || 'Document',
+            stored_name: newMsg.stored_name || '',
+            file_size: attSize,
+            mime_type: attMime,
+          }]
+        : [];
+
+      const normalizedMsg: ChatMessage = {
+        ...newMsg,
+        id: Number(newMsg.id),
+        conversation_id: msgConvId,
+        message_text: newMsg.message_text || newMsg.content || '',
+        attachments: normalizedAttachments,
+        attachment_id: attId ? Number(attId) : undefined,
+        attachmentId: attId ? Number(attId) : undefined,
+        original_name: attName || (normalizedAttachments[0]?.original_name) || null,
+        file_name: attName || (normalizedAttachments[0]?.original_name) || null,
+        mime_type: attMime || (normalizedAttachments[0]?.mime_type) || null,
+        file_type: attMime || (normalizedAttachments[0]?.mime_type) || null,
+        file_size: attSize || (normalizedAttachments[0]?.file_size) || null,
+      };
+
+      // If this message belongs to the open chat, append or update it immediately
+      if (active && Number(active.id) === msgConvId) {
         set((state) => {
-          if (state.messages.some((m) => m.id === newMsg.id)) {
-            return state;
+          const exists = state.messages.some((m) => Number(m.id) === Number(normalizedMsg.id));
+          if (exists) {
+            return {
+              messages: state.messages.map((m) =>
+                Number(m.id) === Number(normalizedMsg.id) ? { ...m, ...normalizedMsg } : m
+              ),
+            };
           }
-          return { messages: [...state.messages, newMsg] };
+          return { messages: [...state.messages, normalizedMsg] };
         });
+
+        // Background sync to ensure full joined database state
+        get().loadMessages(msgConvId);
       }
 
       // Update snippet in conversation list
       set((state) => {
         const convExists = state.conversations.some(
-          (c) => Number(c.id) === Number(newMsg.conversation_id)
+          (c) => Number(c.id) === msgConvId
         );
 
         if (!convExists) {
@@ -271,15 +397,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return state;
         }
 
+        const snippetName = attName || normalizedMsg.original_name || newMsg.original_name || newMsg.file_name;
         const updated = state.conversations.map((c) => {
-          if (Number(c.id) === Number(newMsg.conversation_id)) {
+          if (Number(c.id) === msgConvId) {
             const isCurrentChat = active && Number(active.id) === Number(c.id);
             return {
               ...c,
               last_message:
-                newMsg.message_text ||
-                (newMsg.original_name ? `📎 ${newMsg.original_name}` : 'Message'),
-              last_message_at: newMsg.created_at,
+                normalizedMsg.message_text ||
+                (snippetName ? `📎 ${snippetName}` : 'Document'),
+              last_message_at: normalizedMsg.created_at || new Date().toISOString(),
               unread_count: isCurrentChat ? 0 : (c.unread_count || 0) + 1,
             };
           }

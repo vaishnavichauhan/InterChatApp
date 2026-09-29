@@ -15,8 +15,10 @@ import { UserTypeMasterScreen } from '../screens/admin/UserTypeMasterScreen';
 import { DepartmentMasterScreen } from '../screens/admin/DepartmentMasterScreen';
 import { CloudStorageMasterScreen } from '../screens/admin/CloudStorageMasterScreen';
 import { useAuthStore } from '../store/authStore';
+import { useChatStore } from '../store/chatStore';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
-import { MessagesSquareIcon } from '../components/icons/SvgIcons';
+import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
+import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -27,16 +29,17 @@ export const RootNavigator = () => {
     initialize();
   }, [initialize]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      useChatStore.getState().setupSocketListeners();
+      useChatStore.getState().loadConversations(false);
+    }
+  }, [isAuthenticated]);
+
   if (isLoading) {
     return (
       <View style={styles.splashContainer}>
-        <View style={styles.logoBadge}>
-          <MessagesSquareIcon size={32} color="#ffffff" />
-        </View>
-        <Text style={styles.brandTitle}>
-          Inter<Text style={{ color: colors.primary }}>Chat</Text>
-        </Text>
-        <Text style={styles.brandTagline}>Enterprise Workspace</Text>
+        <EpoxyHouseBrandLogo size="lg" variant="dark" />
         <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: spacing.xl }} />
       </View>
     );
@@ -44,41 +47,48 @@ export const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        {!isAuthenticated ? (
-          <Stack.Screen name="Auth" component={AuthStack} />
-        ) : (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-            <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
-            <Stack.Screen
-              name="NewChat"
-              component={NewChatScreen}
-              options={{ presentation: 'modal' }}
-            />
-            <Stack.Screen
-              name="CreateGroup"
-              component={CreateGroupScreen}
-              options={{ presentation: 'modal' }}
-            />
-            <Stack.Screen
-              name="FileViewer"
-              component={FileViewerScreen}
-              options={{ presentation: 'fullScreenModal' }}
-            />
-            <Stack.Screen name="UserMaster" component={UserMasterScreen} />
-            <Stack.Screen name="CreateUser" component={CreateUserScreen} />
-            <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
-            <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
-            <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
-          </>
-        )}
-      </Stack.Navigator>
+      <View style={styles.rootContainer}>
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          {!isAuthenticated ? (
+            <Stack.Screen name="Auth" component={AuthStack} />
+          ) : (
+            <>
+              <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+              <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+              <Stack.Screen
+                name="NewChat"
+                component={NewChatScreen}
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="CreateGroup"
+                component={CreateGroupScreen}
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="FileViewer"
+                component={FileViewerScreen}
+                options={{ presentation: 'fullScreenModal' }}
+              />
+              <Stack.Screen name="UserMaster" component={UserMasterScreen} />
+              <Stack.Screen name="CreateUser" component={CreateUserScreen} />
+              <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
+              <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
+              <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+        {isAuthenticated && <WatermarkOverlay />}
+      </View>
     </NavigationContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   splashContainer: {
     flex: 1,
     backgroundColor: colors.background,

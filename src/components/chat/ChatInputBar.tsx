@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { SendIcon, PaperclipIcon, XMarkIcon, LockIcon } from '../icons/SvgIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatMessage } from '../../store/chatStore';
 import { FileUploadAsset } from '../../api/chatApi';
 
@@ -39,6 +42,20 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 }) => {
   const [text, setText] = useState('');
   const [typingTimeout, setTypingTimeout] = useState<any>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setIsKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleTextChange = (val: string) => {
     setText(val);
@@ -72,10 +89,12 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     );
   }
 
+  const insets = useSafeAreaInsets();
+  const bottomInset = isKeyboardVisible ? 4 : Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
   const canSubmit = (Boolean(text.trim()) || Boolean(selectedFile)) && !isUploading;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: Math.max(bottomInset, spacing.sm) }]}>
       {/* Replying Banner */}
       {replyingTo && (
         <View style={styles.replyBanner}>
@@ -117,7 +136,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
         <TextInput
           style={styles.input}
-          placeholder="Type a message..."
+          placeholder="Type a message here..."
           placeholderTextColor={colors.textLight}
           value={text}
           onChangeText={handleTextChange}
@@ -223,28 +242,30 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    minHeight: 52,
   },
   attachButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
     flex: 1,
-    minHeight: 36,
-    maxHeight: 100,
+    minHeight: 46,
+    maxHeight: 120,
     fontSize: fontSizes.base,
     color: colors.textPrimary,
     fontWeight: fontWeights.medium,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    textAlignVertical: 'center',
   },
   sendButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',

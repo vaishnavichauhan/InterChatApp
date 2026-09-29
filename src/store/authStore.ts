@@ -46,8 +46,33 @@ const defaultPermissions: UserPermissions = {
   canCamera: true,
   canView: true,
   canUpload: true,
-  canDownload: true,
+  canDownload: false,
   canGroup: true,
+};
+
+export const isDeviceDownloadAllowed = (user: any): boolean => {
+  if (!user) return false;
+  if (
+    user.device_allow_download === false ||
+    user.device_allow_download === 0 ||
+    user.device_allow_download === '0'
+  ) {
+    return false;
+  }
+  return true;
+};
+
+export const isUserAdminRole = (user: any): boolean => {
+  if (!user) return false;
+  const role = String(user.role || '').toLowerCase().trim();
+  const typeName = String(user.user_type_name || user.typeName || '').toLowerCase().trim();
+  return (
+    ['admin', 'master_admin', 'super admin', 'administrator', 'super administrator', 'master'].includes(role) ||
+    ['admin', 'master_admin', 'super admin', 'administrator', 'super administrator'].includes(typeName) ||
+    user.username?.toLowerCase() === 'admin' ||
+    Number(user.user_type_id) === 1 ||
+    Number(user.role_id) === 1
+  );
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -66,7 +91,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (storedToken && storedUserStr) {
         const parsedUser = JSON.parse(storedUserStr) as User;
-        const isAdmin = parsedUser.role === 'admin' || parsedUser.username === 'admin';
+        const isAdmin = isUserAdminRole(parsedUser);
+        const devAllowed = isDeviceDownloadAllowed(parsedUser);
 
         set({
           user: parsedUser,
@@ -79,7 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             canCamera: true,
             canView: true,
             canUpload: true,
-            canDownload: (isAdmin || parsedUser.device_allow_download !== false),
+            canDownload: isAdmin && devAllowed,
             canGroup: true,
           },
         });
@@ -109,7 +135,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      const isAdmin = user.role === 'admin' || user.username === 'admin';
+      const isAdmin = isUserAdminRole(user);
+      const devAllowed = isDeviceDownloadAllowed(user);
       const deviceId = await getDeviceId();
 
       set({
@@ -122,7 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           canCamera: true,
           canView: true,
           canUpload: true,
-          canDownload: (isAdmin || user.device_allow_download !== false),
+          canDownload: isAdmin && devAllowed,
           canGroup: true,
         },
       });
@@ -165,29 +192,59 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const currentUser = get().user;
     if (!currentUser) return;
 
-    const isAdmin = currentUser.role === 'admin' || currentUser.username === 'admin';
+    const isAdmin = isUserAdminRole(currentUser);
+    const devAllowed = isDeviceDownloadAllowed(currentUser);
+
     if (isAdmin) {
-      set({ permissions: defaultPermissions });
+      set({
+        permissions: {
+          ...defaultPermissions,
+          canDownload: devAllowed,
+        },
+      });
       return;
     }
 
     try {
       const res = await getMyPermissions();
-      if (res.data?.success && res.data.permissions) {
+      if (res.data?.success) {
+        if (res.data.isAdmin) {
+          set({
+            permissions: {
+              ...defaultPermissions,
+              canDownload: devAllowed,
+            },
+          });
+          return;
+        }
+
         const perms = res.data.permissions;
         const hasPerm = (master: string, action: 'read' | 'write') => {
-          const match = perms.find((p: any) => p.master_name === master);
-          if (!match) return false;
-          return action === 'read' ? Boolean(match.can_read) : Boolean(match.can_write);
+          if (!perms) return false;
+          if (Array.isArray(perms)) {
+            const match = perms.find((p: any) => p.master_name === master);
+            if (!match) return false;
+            return action === 'read' ? Boolean(match.can_read) : Boolean(match.can_write);
+          } else if (typeof perms === 'object') {
+            const p = perms[master];
+            if (!p) return false;
+            return action === 'read' ? Boolean(p.read) : Boolean(p.write);
+          }
+          return false;
         };
+
+        const hasDownloadRole =
+          Boolean(hasPerm('document_download', 'read') || hasPerm('document_download', 'write'));
+
+        const canDownload = hasDownloadRole && devAllowed;
 
         set({
           permissions: {
             canChat: hasPerm('chat', 'write'),
             canCamera: hasPerm('camera_access', 'read') || hasPerm('camera_access', 'write'),
-            canView: hasPerm('document_view', 'read'),
+            canView: hasPerm('document_view', 'read') || hasPerm('document_view', 'write'),
             canUpload: hasPerm('document_upload', 'write'),
-            canDownload: hasPerm('document_download', 'read') && currentUser.device_allow_download !== false,
+            canDownload,
             canGroup: hasPerm('group_create', 'write'),
           },
         });

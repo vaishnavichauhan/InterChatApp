@@ -18,42 +18,12 @@ import Svg, {
 } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  MessagesSquareIcon,
-} from '../../components/icons/SvgIcons';
+import { ArrowRightIcon, CheckIcon } from '../../components/icons/SvgIcons';
+import { EpoxyHouseBrandLogo } from '../../components/common/EpoxyHouseBrandLogo';
 
 interface WelcomeScreenProps {
   navigation: any;
 }
-
-// InterChat Interlinking Hero Icon matching the Frontend Web App
-const InterChatHeroIcon: React.FC = () => (
-  <View style={styles.heroIconWrapper}>
-    {/* Ambient radial glow aura */}
-    <View style={styles.iconAura} />
-
-    {/* Squircle logo badge identical to frontend brand design */}
-    <View style={styles.heroLogoTile}>
-      <Svg
-        width={46}
-        height={46}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {/* Left message bubble */}
-        <Path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z" />
-        {/* Interlinked right message bubble */}
-        <Path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />
-      </Svg>
-    </View>
-  </View>
-);
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -96,17 +66,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             style={StyleSheet.absoluteFill}
           >
             <Defs>
-              {/* Vibrant Blue/Indigo Gradient */}
+              {/* Soft, pleasant light red gradient */}
               <LinearGradient id="upperBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#0284c7" />
-                <Stop offset="42%" stopColor="#2563eb" />
-                <Stop offset="100%" stopColor="#3730a3" />
+                <Stop offset="0%" stopColor={colors.heroGradientStart} />
+                <Stop offset="50%" stopColor={colors.heroGradientMid} />
+                <Stop offset="100%" stopColor={colors.heroGradientEnd} />
               </LinearGradient>
 
               {/* Softer translucent secondary wave for visual depth */}
               <LinearGradient id="backWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="rgba(56, 189, 248, 0.3)" />
-                <Stop offset="100%" stopColor="rgba(99, 102, 241, 0.3)" />
+                <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
+                <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
               </LinearGradient>
             </Defs>
 
@@ -118,12 +88,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
           </Svg>
 
           {/* Upper Half Content: Information Our App */}
-          <View style={[styles.upperContent, { paddingTop: topInset + 32 }]}>
-            {/* Center: Official Interlocking Chat Hero Icon */}
-            <InterChatHeroIcon />
-            <Text style={styles.headerTitleText}>
-              Inter<Text style={styles.headerTitleAccent}>Chat</Text>
-            </Text>
+          <View style={[styles.upperContent, { paddingTop: topInset + 36 }]}>
+            {/* Center: Official Epoxy House + InterChat Brand Logo */}
+            <View style={styles.heroLogoContainer}>
+              <EpoxyHouseBrandLogo size="lg" variant="light" />
+            </View>
 
             {/* App Information Section */}
             <View style={styles.infoSection}>
@@ -171,9 +140,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
               <Defs>
                 <LinearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <Stop offset="0%" stopColor="#4f46e5" />
-                  <Stop offset="50%" stopColor="#2563eb" />
-                  <Stop offset="100%" stopColor="#06b6d4" />
+                  <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                  <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
                 </LinearGradient>
               </Defs>
               <Rect width="100%" height="100%" rx={28} fill="url(#btnGrad)" />
@@ -182,7 +150,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
             <View style={styles.buttonInnerContent}>
               <Text style={styles.continueButtonText}>Continue Sign in</Text>
               <View style={styles.arrowCircle}>
-                <ArrowRightIcon size={16} color="#2563eb" />
+                <ArrowRightIcon size={16} color={colors.buttonPrimary} />
               </View>
             </View>
           </TouchableOpacity>
@@ -214,56 +182,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  headerTitleRow: {
-    flexDirection: 'row',
+  heroLogoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
-    gap: 8,
-  },
-  brandIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitleText: {
-    fontSize: 27,
-    fontWeight: fontWeights.black,
-    color: '#ffffff',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
-  },
-  headerTitleAccent: {
-    color: '#93c5fd',
-  },
-
-  /* Hero Interlink Icon */
-  heroIconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    position: 'relative',
-  },
-  iconAura: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  heroLogoTile: {
-    width: 82,
-    height: 82,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   /* Information Section */

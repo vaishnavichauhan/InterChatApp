@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   StatusBar,
   Alert,
   TouchableOpacity,
+  Keyboard,
+  RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { AppAvatar } from '../../components/common/AppAvatar';
@@ -21,6 +24,7 @@ import { TypingIndicator } from '../../components/chat/TypingIndicator';
 import { useChatStore, ChatMessage } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 import { uploadChatAttachment, deleteGroupChat, FileUploadAsset } from '../../api/chatApi';
+import { getSocket } from '../../utils/socket';
 
 interface ChatDetailScreenProps {
   navigation: any;
@@ -37,6 +41,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
 
   const {
     activeConversation,
+    conversations,
     messages,
     sendMessage,
     onlineUserIds,
@@ -45,14 +50,73 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
     emitTypingStop,
     leaveActiveConversation,
     loadConversations,
+    loadMessages,
+    selectConversation,
+    setupSocketListeners,
   } = useChatStore();
 
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileUploadAsset | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+
+  const targetConvId = _route?.params?.conversationId || activeConversation?.id;
+
+  // Refresh messages and permissions whenever user enters or returns to this chat screen
+  useFocusEffect(
+    useCallback(() => {
+      useAuthStore.getState().refreshPermissions();
+      setupSocketListeners();
+
+      if (targetConvId) {
+        const id = Number(targetConvId);
+        loadMessages(id);
+        const socket = getSocket(user?.id);
+        socket.emit('conversation:join', id);
+
+        const conv = conversations.find((c) => Number(c.id) === id);
+        if (conv) {
+          if (!activeConversation || Number(activeConversation.id) !== id) {
+            selectConversation(conv);
+          }
+        } else if (!activeConversation || Number(activeConversation.id) !== id) {
+          selectConversation({
+            id,
+            type: 'direct',
+            title: _route?.params?.title || 'Chat',
+          } as any);
+        }
+      }
+
+      // Fast sync timer while focused to guarantee incoming document appearance
+      const syncInterval = setInterval(() => {
+        if (targetConvId) {
+          loadMessages(Number(targetConvId));
+        }
+      }, 4000);
+
+      return () => {
+        clearInterval(syncInterval);
+      };
+    }, [targetConvId, activeConversation, conversations, loadMessages, selectConversation, setupSocketListeners, user?.id, _route?.params?.title])
+  );
+
+  const handleRefresh = async () => {
+    if (!targetConvId) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        loadMessages(Number(targetConvId)),
+        loadConversations(false),
+        useAuthStore.getState().refreshPermissions(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -67,6 +131,16 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
       }, 150);
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(showEvent, () => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!activeConversation) {
     return null;
@@ -112,6 +186,10 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
       });
 
       setReplyingTo(null);
+
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (err: any) {
       Alert.alert('Send Failed', err.response?.data?.message || 'Failed to send message.');
     } finally {
@@ -214,7 +292,8 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
       {/* Messages Thread */}
       <KeyboardAvoidingView
         style={styles.threadContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -237,6 +316,14 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
             { paddingBottom: spacing.md },
           ]}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
         />
 
         {/* Real-time typing bubble */}

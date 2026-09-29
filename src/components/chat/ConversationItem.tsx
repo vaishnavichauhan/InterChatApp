@@ -48,18 +48,20 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
         <View style={styles.topRow}>
           <View style={styles.titleRow}>
             {isActivity && <Text style={styles.hashPrefix}>#</Text>}
-            <Text style={styles.titleText} numberOfLines={1}>
+            <Text style={styles.titleText} numberOfLines={2} ellipsizeMode="tail">
               {title}
             </Text>
 
             {isActivity && <AppBadge label="DEFAULT" variant="activity" style={styles.badge} />}
-            {isMaster && <AppBadge label="BROADCAST" variant="broadcast" style={styles.badge} />}
+            {(isMaster || isAnnouncement) && (
+              <AppBadge label="BROADCAST" variant="broadcast" style={styles.badge} />
+            )}
             {conversation.department_name && !isActivity && (
               <AppBadge label={`🏢 ${conversation.department_name}`} variant="department" style={styles.badge} />
             )}
           </View>
 
-          <Text style={styles.timeText}>
+          <Text style={styles.timeText} numberOfLines={1}>
             {formatTimestamp(conversation.last_message_at || conversation.created_at)}
           </Text>
         </View>
@@ -104,6 +106,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: spacing.md,
     justifyContent: 'center',
+    minWidth: 0,
   },
   topRow: {
     flexDirection: 'row',
@@ -116,25 +119,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: spacing.sm,
+    minWidth: 0,
   },
   hashPrefix: {
     fontSize: fontSizes.md,
     fontWeight: fontWeights.black,
     color: '#d97706',
     marginRight: 2,
+    flexShrink: 0,
   },
   titleText: {
     fontSize: fontSizes.md,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   badge: {
     marginLeft: spacing.xs,
+    flexShrink: 0,
   },
   timeText: {
     fontSize: fontSizes.tiny,
     color: colors.textMuted,
     fontWeight: fontWeights.medium,
+    flexShrink: 0,
+    marginLeft: spacing.xs,
+    textAlign: 'right',
   },
   bottomRow: {
     flexDirection: 'row',

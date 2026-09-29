@@ -79,8 +79,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       name: 'Department Master',
       desc: 'Manage departments & organizational units',
       icon: BuildingIcon,
-      iconColor: '#2563eb',
-      bgColor: '#eff6ff',
+      iconColor: colors.primary,
+      bgColor: colors.primarySubtle,
       onPress: () => navigation.navigate('DepartmentMaster'),
     },
     {
@@ -137,13 +137,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
           >
             <Defs>
               <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%"   stopColor="#0284c7" />
-                <Stop offset="42%"  stopColor="#2563eb" />
-                <Stop offset="100%" stopColor="#3730a3" />
+                <Stop offset="0%"   stopColor={colors.heroGradientStart} />
+                <Stop offset="50%"  stopColor={colors.heroGradientMid} />
+                <Stop offset="100%" stopColor={colors.heroGradientEnd} />
               </LinearGradient>
               <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%"   stopColor="rgba(56, 189, 248, 0.30)" />
-                <Stop offset="100%" stopColor="rgba(99, 102, 241, 0.30)" />
+                <Stop offset="0%"   stopColor="rgba(255, 255, 255, 0.28)" />
+                <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
               </LinearGradient>
             </Defs>
             {/* Depth back-wave */}
@@ -205,7 +205,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             </View>
           </View>
 
-          <View style={[styles.kpiCard, shadows.sm]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('UserMaster')}
+            style={[styles.kpiCard, shadows.sm]}>
             <View style={[styles.kpiIconWrap, { backgroundColor: '#fef3c7' }]}>
               <MobileIcon size={20} color={colors.warning} />
             </View>
@@ -213,7 +215,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
               <Text style={styles.kpiLabel}>PENDING DEVICES</Text>
               <Text style={[styles.kpiValue, { color: colors.warning }]}>{pendingDevices}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.kpiCard, shadows.sm]}
@@ -239,7 +241,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
           > */}
             <View style={styles.dropdownTitleRow}>
               <View style={styles.dropdownHeaderIconWrap}>
-                <LayersIcon size={18} color="#0056cf" />
+                <LayersIcon size={18} color={colors.primary} />
               </View>
               <Text style={styles.sectionHeader}>Enterprise Administration Masters</Text>
             </View>

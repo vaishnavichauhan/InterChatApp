@@ -35,6 +35,14 @@ import {
   RefreshIcon,
   BuildingIcon,
   LockIcon,
+  MessagesSquareIcon,
+  CameraIcon,
+  EyeIcon,
+  PaperclipIcon,
+  MobileIcon,
+  ChartIcon,
+  CloudIcon,
+  DownloadIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getUserTypes,
@@ -143,6 +151,96 @@ const PERMISSION_CONFIGS = [
 
 const ALL_MASTER_KEYS = PERMISSION_CONFIGS.flatMap((c) => c.items.map((i) => i.key));
 
+const CAPABILITY_TILES: Record<
+  string,
+  { label: string; icon: (color: string) => React.ReactNode; color: string; bg: string; border: string }
+> = {
+  user_master: {
+    label: 'Client Perms',
+    icon: (c) => <ShieldCheckIcon size={20} color={c} />,
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+  },
+  department_master: {
+    label: 'Departments',
+    icon: (c) => <BuildingIcon size={20} color={c} />,
+    color: colors.primary,
+    bg: colors.primarySubtle,
+    border: colors.primaryMuted,
+  },
+  user_type: {
+    label: 'User Roles',
+    icon: (c) => <CrownIcon size={20} color={c} />,
+    color: '#9333ea',
+    bg: '#faf5ff',
+    border: '#e9d5ff',
+  },
+  device_approval: {
+    label: 'Devices',
+    icon: (c) => <MobileIcon size={20} color={c} />,
+    color: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+  },
+  activity_report: {
+    label: 'Audit Logs',
+    icon: (c) => <ChartIcon size={20} color={c} />,
+    color: '#059669',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
+  },
+  cloud_storage: {
+    label: 'Storage',
+    icon: (c) => <CloudIcon size={20} color={c} />,
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+  },
+  chat: {
+    label: 'Chat Access',
+    icon: (c) => <MessagesSquareIcon size={20} color={c} />,
+    color: '#0284c7',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
+  },
+  camera_access: {
+    label: 'Live Camera',
+    icon: (c) => <CameraIcon size={20} color={c} />,
+    color: colors.primary,
+    bg: colors.primarySubtle,
+    border: colors.primaryMuted,
+  },
+  group_create: {
+    label: 'Group Chat',
+    icon: (c) => <UsersIcon size={20} color={c} />,
+    color: '#16a34a',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+  },
+  document_view: {
+    label: 'View Docs',
+    icon: (c) => <EyeIcon size={20} color={c} />,
+    color: '#475569',
+    bg: '#f8fafc',
+    border: '#cbd5e1',
+  },
+  document_upload: {
+    label: 'Upload Files',
+    icon: (c) => <PaperclipIcon size={20} color={c} />,
+    color: '#ea580c',
+    bg: '#fff7ed',
+    border: '#fed7aa',
+  },
+  document_download: {
+    label: 'Download',
+    icon: (c) => <DownloadIcon size={20} color={c} />,
+    color: '#0d9488',
+    bg: '#f0fdfa',
+    border: '#99f6e4',
+  },
+};
+
 const ROLE_PRESETS = [
   {
     name: 'Super Admin',
@@ -157,9 +255,9 @@ const ROLE_PRESETS = [
     name: 'Department Admin',
     categoryTier: 'ADMIN',
     badge: 'Dept Admin',
-    color: '#eef2ff',
-    borderColor: '#c7d2fe',
-    textColor: '#4f46e5',
+    color: colors.primarySubtle,
+    borderColor: colors.primaryMuted,
+    textColor: colors.primary,
     activeKeys: [
       'user_master',
       'department_master',
@@ -448,10 +546,15 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     );
   };
 
-  // Render capability badges for each card
+  // Render capability badges for each card as small square cards with icon and text
   const renderCapabilityBadges = (permissions: any[]) => {
     if (!permissions || permissions.length === 0) {
-      return <Text style={styles.emptyPermText}>No permissions configured</Text>;
+      return (
+        <View style={styles.emptyPermBox}>
+          <LockIcon size={14} color="#94a3b8" />
+          <Text style={styles.emptyPermText}>No permissions configured</Text>
+        </View>
+      );
     }
 
     const enabledKeys = new Set(
@@ -463,40 +566,45 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     );
 
     if (activeItems.length === 0) {
-      return <Text style={styles.emptyPermText}>All access restricted</Text>;
-    }
-
-    const isFullAccess = ALL_MASTER_KEYS.every((k) => enabledKeys.has(k));
-
-    if (isFullAccess) {
       return (
-        <View style={styles.fullAccessBadge}>
-          <CrownIcon size={14} color="#7c3aed" />
-          <Text style={styles.fullAccessText}>Full Administrative Access</Text>
+        <View style={styles.emptyPermBox}>
+          <LockIcon size={14} color="#94a3b8" />
+          <Text style={styles.emptyPermText}>All access restricted</Text>
         </View>
       );
     }
 
     return (
-      <View style={styles.capabilityPillsRow}>
-        {activeItems.map((item) => (
-          <View
-            key={item.key}
-            style={[
-              styles.capabilityPill,
-              item.requiresAdmin ? styles.capabilityPillAdmin : styles.capabilityPillUser,
-            ]}
-          >
-            <Text
+      <View style={styles.capabilitiesGrid}>
+        {activeItems.map((item) => {
+          const tile = CAPABILITY_TILES[item.key] || {
+            label: item.badge,
+            icon: (c: string) => <LockIcon size={19} color={c} />,
+            color: '#64748b',
+            bg: '#f8fafc',
+            border: '#e2e8f0',
+          };
+
+          return (
+            <View
+              key={item.key}
               style={[
-                styles.capabilityPillText,
-                item.requiresAdmin ? styles.capabilityPillTextAdmin : styles.capabilityPillTextUser,
+                styles.capabilitySquareCard,
+                { backgroundColor: tile.bg, borderColor: tile.border },
               ]}
             >
-              {item.badge}
-            </Text>
-          </View>
-        ))}
+              <View style={styles.squareCardIconWrap}>
+                {tile.icon(tile.color)}
+              </View>
+              <Text
+                style={[styles.squareCardLabel, { color: tile.color }]}
+                numberOfLines={1}
+              >
+                {tile.label}
+              </Text>
+            </View>
+          );
+        })}
       </View>
     );
   };
@@ -504,30 +612,17 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
   // Header Component for List
   const renderListHeader = () => (
     <View style={styles.listHeaderContainer}>
-      {/* ── Subtitle Banner ── */}
-      <View style={styles.headerBanner}>
-        <View style={styles.bannerTagPill}>
-          <Text style={styles.bannerTagText}>ACCESS GOVERNANCE & RBAC DIRECTORY</Text>
+      {/* ── Top Action Bar: Title & "+ Create Role" Button ── */}
+      <View style={styles.topActionBar}>
+        <View style={styles.topActionLeft}>
+          <Text style={styles.screenHeading}>Role & Permissions</Text>
+          <Text style={styles.screenSubheading}>
+            {data.length} {data.length === 1 ? 'role profile' : 'role profiles'} configured
+          </Text>
         </View>
-        <Text style={styles.bannerTitle}>Create User Role & Permissions</Text>
-        <Text style={styles.bannerSubtitle}>
-          Configure fine-grained access profiles, client management permissions, camera sharing, and file security across all organizational roles.
-        </Text>
-      </View>
-
-      {/* ── Action Buttons Row: Refresh & + Create New Role ── */}
-      <View style={styles.actionButtonsRow}>
-        <TouchableOpacity
-          style={styles.refreshBtn}
-          onPress={onRefresh}
-          activeOpacity={0.7}
-        >
-          <RefreshIcon size={14} color={colors.textSecondary} />
-          <Text style={styles.refreshBtnText}>Refresh</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.createRoleBtn}
+          style={[styles.createRoleBtn, shadows.md]}
           onPress={handleOpenCreate}
           activeOpacity={0.85}
         >
@@ -540,8 +635,8 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           >
             <Defs>
               <LinearGradient id="createRoleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor="#0056cf" />
-                <Stop offset="100%" stopColor="#4f46e5" />
+                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
               </LinearGradient>
             </Defs>
             <Rect x="0" y="0" width="100" height="100" fill="url(#createRoleGrad)" />
@@ -549,62 +644,12 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
 
           <View style={styles.createRoleBtnInner}>
             <View style={styles.createRoleIconCircle}>
-              <PlusIcon size={12} color="#0056cf" />
+              <PlusIcon size={12} color={colors.buttonPrimary} />
             </View>
-            <Text style={styles.createRoleBtnText}>Create New Role</Text>
+            <Text style={styles.createRoleBtnText}>Create Role</Text>
           </View>
         </TouchableOpacity>
       </View>
-
-      {/* ── 3 KPI Cards at Top (matching web frontend exactly) ── */}
-      <View style={styles.kpiCardsRow}>
-        {/* Total Roles */}
-        <View style={[styles.kpiCard, shadows.sm]}>
-          <View style={[styles.kpiIconWrap, { backgroundColor: '#eff6ff' }]}>
-            <ShieldCheckIcon size={20} color="#0056cf" />
-          </View>
-          <View style={styles.kpiTextWrap}>
-            <Text style={styles.kpiLabel}>TOTAL ROLES</Text>
-            <Text style={[styles.kpiValue, { color: '#0056cf' }]}>{stats.total}</Text>
-          </View>
-        </View>
-
-        {/* Admin Tier Roles */}
-        <View style={[styles.kpiCard, shadows.sm]}>
-          <View style={[styles.kpiIconWrap, { backgroundColor: '#f5f3ff' }]}>
-            <ShieldUserIcon size={20} color="#7c3aed" />
-          </View>
-          <View style={styles.kpiTextWrap}>
-            <Text style={styles.kpiLabel}>ADMIN TIER</Text>
-            <Text style={[styles.kpiValue, { color: '#7c3aed' }]}>{stats.adminRoles}</Text>
-          </View>
-        </View>
-
-        {/* User / Client Roles */}
-        <View style={[styles.kpiCard, shadows.sm]}>
-          <View style={[styles.kpiIconWrap, { backgroundColor: '#ecfdf5' }]}>
-            <UsersIcon size={20} color="#059669" />
-          </View>
-          <View style={styles.kpiTextWrap}>
-            <Text style={styles.kpiLabel}>USER / CLIENT</Text>
-            <Text style={[styles.kpiValue, { color: '#059669' }]}>{stats.userRoles}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ── Section Title & Counter ── */}
-      <View style={styles.sectionHeaderRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>Organizational Role Permission Profiles</Text>
-          <Text style={styles.sectionSubtitle}>
-            Directory of defined authority tiers, client management rights, and capability sets.
-          </Text>
-        </View>
-        <View style={styles.roleCountBadge}>
-          <Text style={styles.roleCountText}>{filteredData.length} Roles</Text>
-        </View>
-      </View>
-
       {/* ── Search Bar & Authority Tier Filter Row ── */}
       <View style={styles.searchFilterRow}>
         <View style={styles.searchBar}>
@@ -646,6 +691,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
       <AppHeader
         title="User Type Master"
         showBack
+        rightAction
         onBack={() => navigation.goBack()}
       />
 
@@ -664,29 +710,27 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           ListHeaderComponent={renderListHeader}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const hasAdminPerm = (item.permissions || []).some(
+            const permissions = item.permissions || [];
+            const hasAdminPerm = permissions.some(
               (p: any) =>
                 (p.canRead || p.canWrite) &&
                 ['user_master', 'department_master', 'user_type'].includes(p.masterName)
             );
+            const enabledKeys = new Set(
+              permissions.filter((p: any) => p.canRead || p.canWrite).map((p: any) => p.masterName)
+            );
+            const activeCount = PERMISSION_CONFIGS.flatMap((c) => c.items).filter((i) =>
+              enabledKeys.has(i.key)
+            ).length;
+            const isFullAccess = ALL_MASTER_KEYS.length > 0 && ALL_MASTER_KEYS.every((k) => enabledKeys.has(k));
 
             return (
               <View style={[styles.roleCard, shadows.sm]}>
-                {/* ── Card Header: Avatar Icon, Name & Tier Pill, #ID ── */}
+                {/* ── Card Header: #ID, Role Title & Tier Pill ── */}
                 <View style={styles.cardHeaderRow}>
-                  <View
-                    style={[
-                      styles.avatarBox,
-                      hasAdminPerm ? styles.avatarBoxAdmin : styles.avatarBoxUser,
-                    ]}
-                  >
-                    {hasAdminPerm ? (
-                      <ShieldUserIcon size={18} color="#7c3aed" />
-                    ) : (
-                      <UsersIcon size={18} color="#059669" />
-                    )}
+                  <View style={styles.idTagBox}>
+                    <Text style={styles.idTagText}>{item.id}.</Text>
                   </View>
-
                   <View style={styles.roleInfoCol}>
                     <View style={styles.roleTitleRow}>
                       <Text style={styles.roleNameText} numberOfLines={1}>
@@ -708,42 +752,51 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                         </Text>
                       </View>
                     </View>
-
-                    <Text style={styles.addedByText}>
-                      Added by {item.added_by_name || 'Admin User'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.idTagBox}>
-                    <Text style={styles.idTagText}>#{item.id}</Text>
                   </View>
                 </View>
 
                 {/* ── Granted Capabilities & Permissions Section ── */}
                 <View style={styles.capabilitiesContainer}>
-                  <Text style={styles.capabilitiesHeading}>GRANTED CAPABILITIES & PERMISSIONS</Text>
+                  <View style={styles.capabilitiesHeaderRow}>
+                    <Text style={styles.capabilitiesHeading}>GRANTED CAPABILITIES & PERMISSIONS</Text>
+                    <View style={styles.countBadge}>
+                      <Text style={styles.countBadgeText}>
+                        {isFullAccess
+                          ? '12/12 FULL ACCESS'
+                          : activeCount > 0
+                          ? `${activeCount} ACTIVE`
+                          : 'RESTRICTED'}
+                      </Text>
+                    </View>
+                  </View>
                   {renderCapabilityBadges(item.permissions)}
                 </View>
 
-                {/* ── Card Footer Actions (Edit & Delete) ── */}
-                <View style={styles.cardActionsRow}>
-                  <TouchableOpacity
-                    style={styles.actionBtnEdit}
-                    onPress={() => handleOpenEdit(item)}
-                    activeOpacity={0.7}
-                  >
-                    <EditIcon size={13} color="#4f46e5" />
-                    <Text style={styles.actionBtnEditText}>Edit</Text>
-                  </TouchableOpacity>
+                {/* ── Card Footer Actions (Edit & Delete - Symbol Only) ── */}
+                <View style={styles.cardFooterRow}>
+                  <Text style={styles.addedByText} numberOfLines={1}>
+                    Added by {item.added_by_name || 'Admin User'}
+                  </Text>
 
-                  <TouchableOpacity
-                    style={styles.actionBtnDelete}
-                    onPress={() => handleDeleteRole(item)}
-                    activeOpacity={0.7}
-                  >
-                    <TrashIcon size={13} color="#ef4444" />
-                    <Text style={styles.actionBtnDeleteText}>Delete</Text>
-                  </TouchableOpacity>
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.actionBtnEditSquare}
+                      onPress={() => handleOpenEdit(item)}
+                      activeOpacity={0.7}
+                      accessibilityLabel="Edit Role"
+                    >
+                      <EditIcon size={15} color={colors.primary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.actionBtnDeleteSquare}
+                      onPress={() => handleDeleteRole(item)}
+                      activeOpacity={0.7}
+                      accessibilityLabel="Delete Role"
+                    >
+                      <TrashIcon size={15} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             );
@@ -770,17 +823,17 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={styles.modalHeaderIcon}>
-                  <ShieldUserIcon size={18} color="#4f46e5" />
+                  <ShieldUserIcon size={18} color={colors.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>
                     {modalMode === 'create' ? 'Create New Role Profile' : 'Edit Role & Permissions'}
                   </Text>
-                  <Text style={styles.modalSubtitle}>
+                  {/* <Text style={styles.modalSubtitle} >
                     {modalMode === 'create'
                       ? 'Establish access tier and authority capabilities'
                       : `Customize fine-grained authority toggles for "${typeName}"`}
-                  </Text>
+                  </Text> */}
                 </View>
               </View>
               <TouchableOpacity onPress={() => setIsModalOpen(false)}>
@@ -803,7 +856,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                   <View
                     style={[
                       styles.tierSelectIconBox,
-                      { backgroundColor: modalRoleTier === 'ADMIN' ? '#4f46e5' : '#f5f3ff' },
+                      { backgroundColor: modalRoleTier === 'ADMIN' ? colors.primary : '#f5f3ff' },
                     ]}
                   >
                     <ShieldUserIcon
@@ -921,7 +974,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                           <Switch
                             value={isEnabled}
                             onValueChange={() => handleToggleKey(item.key)}
-                            trackColor={{ false: '#e2e8f0', true: '#4f46e5' }}
+                            trackColor={{ false: '#e2e8f0', true: colors.primary }}
                             thumbColor={isEnabled ? '#ffffff' : '#f8fafc'}
                             ios_backgroundColor="#e2e8f0"
                           />
@@ -944,7 +997,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                   title={modalMode === 'create' ? 'Create Role' : 'Save Changes'}
                   onPress={handleSaveRole}
                   loading={saving}
-                  style={{ flex: 1, backgroundColor: '#0056cf' }}
+                  style={{ flex: 1, backgroundColor: colors.buttonPrimary }}
                 />
               </View>
             </ScrollView>
@@ -1024,87 +1077,47 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
 
-  /* ── Banner ── */
-  headerBanner: {
-    backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: spacing.md,
-  },
-  bannerTagPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    marginBottom: spacing.xs,
-  },
-  bannerTagText: {
-    fontSize: 9.5,
-    fontWeight: fontWeights.black,
-    color: '#0056cf',
-    letterSpacing: 0.5,
-  },
-  bannerTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.black,
-    color: colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  bannerSubtitle: {
-    fontSize: 11.5,
-    color: colors.textMuted,
-    marginTop: 3,
-    lineHeight: 17,
-  },
-
-  /* ── Action Buttons Row ── */
-  actionButtonsRow: {
+  /* ── Inside Screen Top Action Bar ── */
+  topActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
-    gap: 8,
+    gap: spacing.sm,
   },
-  refreshBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: borderRadius.lg,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  topActionLeft: {
+    flex: 1,
   },
-  refreshBtnText: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.semibold,
-    color: colors.textSecondary,
+  screenHeading: {
+    fontSize: fontSizes.lg,
+    fontWeight: fontWeights.black,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  screenSubheading: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+    fontWeight: fontWeights.medium,
   },
   createRoleBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,
     overflow: 'hidden',
-    position: 'relative',
+    backgroundColor: colors.buttonPrimary,
+    flexShrink: 0,
     justifyContent: 'center',
   },
   createRoleBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 7,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 9,
   },
   createRoleIconCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1171,17 +1184,17 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   roleCountBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.primaryMuted,
   },
   roleCountText: {
     fontSize: 10,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
 
   /* ── Search & Filter Row ── */
@@ -1229,17 +1242,18 @@ const styles = StyleSheet.create({
   /* ── Role Card Style ── */
   roleCard: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
+    borderRadius: 16,
+    padding: 16,
     marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    minHeight: 180,
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: spacing.sm,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
@@ -1263,22 +1277,23 @@ const styles = StyleSheet.create({
   },
   roleInfoCol: {
     flex: 1,
+    marginLeft: 8,
   },
   roleTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flexWrap: 'wrap',
   },
   roleNameText: {
-    fontSize: fontSizes.sm,
+    fontSize: 15,
     fontWeight: fontWeights.extrabold,
     color: colors.textPrimary,
   },
   tierBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: borderRadius.sm,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
     borderWidth: 1,
   },
   tierBadgeAdmin: {
@@ -1290,7 +1305,7 @@ const styles = StyleSheet.create({
     borderColor: '#a7f3d0',
   },
   tierBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: fontWeights.extrabold,
   },
   tierBadgeTextAdmin: {
@@ -1299,80 +1314,88 @@ const styles = StyleSheet.create({
   tierBadgeTextUser: {
     color: '#059669',
   },
-  addedByText: {
-    fontSize: 10.5,
-    color: colors.textLight,
-    marginTop: 2,
-  },
   idTagBox: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
     backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   idTagText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontWeight: fontWeights.bold,
-    color: colors.textMuted,
+    color: '#475569',
   },
 
   /* ── Capabilities Section in Card ── */
   capabilitiesContainer: {
-    paddingVertical: spacing.sm,
+    paddingVertical: 12,
+  },
+  capabilitiesHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   capabilitiesHeading: {
+    fontSize: 10,
+    fontWeight: fontWeights.extrabold,
+    color: colors.textLight,
+    letterSpacing: 0.5,
+  },
+  countBadge: {
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  countBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeights.extrabold,
+    color: '#475569',
+    letterSpacing: 0.3,
+  },
+  capabilitiesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  capabilitySquareCard: {
+    width: 70,
+    height: 68,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+  },
+  squareCardIconWrap: {
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  squareCardLabel: {
     fontSize: 9.5,
     fontWeight: fontWeights.bold,
-    color: colors.textLight,
-    letterSpacing: 0.3,
-    marginBottom: 6,
+    textAlign: 'center',
+    marginTop: 3,
+    maxWidth: '100%',
   },
-  fullAccessBadge: {
+  emptyPermBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: '#f5f3ff',
-    borderWidth: 1,
-    borderColor: '#ddd6fe',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: borderRadius.md,
-  },
-  fullAccessText: {
-    fontSize: 11,
-    fontWeight: fontWeights.extrabold,
-    color: '#7c3aed',
-  },
-  capabilityPillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-  },
-  capabilityPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  capabilityPillAdmin: {
-    backgroundColor: '#f5f3ff',
-    borderColor: '#e9d5ff',
-  },
-  capabilityPillUser: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#f8fafc',
-    borderColor: '#e2e8f0',
-  },
-  capabilityPillText: {
-    fontSize: 10.5,
-    fontWeight: fontWeights.semibold,
-  },
-  capabilityPillTextAdmin: {
-    color: '#7c3aed',
-  },
-  capabilityPillTextUser: {
-    color: colors.textSecondary,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
   emptyPermText: {
     fontSize: 11,
@@ -1381,47 +1404,44 @@ const styles = StyleSheet.create({
   },
 
   /* ── Card Footer Actions ── */
+  cardFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  addedByText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    flex: 1,
+    marginRight: 8,
+  },
   cardActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
   },
-  actionBtnEdit: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: 32,
-    borderRadius: borderRadius.md,
+  actionBtnEditSquare: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: '#f5f3ff',
     borderWidth: 1,
     borderColor: '#ddd6fe',
-  },
-  actionBtnEditText: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-    color: '#4f46e5',
-  },
-  actionBtnDelete: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    height: 32,
-    borderRadius: borderRadius.md,
+  },
+  actionBtnDeleteSquare: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: '#fef2f2',
     borderWidth: 1,
     borderColor: '#fecaca',
-  },
-  actionBtnDeleteText: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-    color: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* ── Empty State ── */
@@ -1518,8 +1538,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tierSelectCardActiveAdmin: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#eef2ff',
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySubtle,
   },
   tierSelectCardActiveUser: {
     borderColor: '#059669',
@@ -1607,7 +1627,7 @@ const styles = StyleSheet.create({
   toggleAllBtnText: {
     fontSize: 10.5,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
   toggleAllDivider: {
     fontSize: 10,

@@ -36,6 +36,82 @@ interface CloudStorageMasterScreenProps {
 
 type StorageDriver = 'LOCAL' | 'GDRIVE' | 'GCS' | 'MICROSOFT';
 
+const DRIVER_OPTIONS: {
+  key: StorageDriver;
+  title: string;
+  badge: string;
+  subtext: string;
+  icon: (selected: boolean) => React.ReactNode;
+  activeColor: string;
+  badgeBg: string;
+  badgeText: string;
+  cardActiveBg: string;
+  cardActiveBorder: string;
+  iconBg: string;
+}[] = [
+    {
+    key: 'LOCAL',
+    title: 'Local Server Disk',
+    badge: 'Zero Config',
+    subtext: 'Direct storage on hosting server file disk.',
+    icon: (selected: boolean) => (
+      <HardDriveIcon size={24} color={selected ? colors.primary : colors.primaryDark} />
+    ),
+    activeColor: colors.primary,
+    badgeBg: colors.primarySubtle,
+    badgeText: colors.primary,
+    cardActiveBg: colors.primarySubtle,
+    cardActiveBorder: colors.primaryMuted,
+    iconBg: colors.primarySubtle,
+  },
+  {
+    key: 'MICROSOFT',
+    title: 'Microsoft Cloud',
+    badge: 'Azure / MS365',
+    subtext: 'Azure Blob Storage & OneDrive integration.',
+    icon: (selected: boolean) => (
+      <CloudIcon size={24} color={selected ? '#0284c7' : '#0369a1'} />
+    ),
+    activeColor: '#0284c7',
+    badgeBg: '#e0f2fe',
+    badgeText: '#0369a1',
+    cardActiveBg: '#f0f9ff',
+    cardActiveBorder: '#38bdf8',
+    iconBg: '#e0f2fe',
+  },
+  {
+    key: 'GDRIVE',
+    title: 'Google Drive',
+    badge: '15 GB Free',
+    subtext: 'Personal / Workspace Service Account.',
+    icon: (selected: boolean) => (
+      <FolderIcon size={24} color={selected ? '#2563eb' : '#1d4ed8'} />
+    ),
+    activeColor: '#2563eb',
+    badgeBg: '#dbeafe',
+    badgeText: '#1d4ed8',
+    cardActiveBg: '#eff6ff',
+    cardActiveBorder: '#60a5fa',
+    iconBg: '#dbeafe',
+  },
+
+  {
+    key: 'GCS',
+    title: 'Google Cloud (GCS)',
+    badge: 'Enterprise GCS',
+    subtext: 'Scalable bucket storage on Google Cloud.',
+    icon: (selected: boolean) => (
+      <CloudIcon size={24} color={selected ? '#059669' : '#047857'} />
+    ),
+    activeColor: '#059669',
+    badgeBg: '#d1fae5',
+    badgeText: '#047857',
+    cardActiveBg: '#ecfdf5',
+    cardActiveBorder: '#34d399',
+    iconBg: '#d1fae5',
+  },
+];
+
 export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -180,6 +256,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
       <AppHeader
         title="Cloud Storage Master"
         showBack
+        rightAction
         onBack={() => navigation.goBack()}
       />
 
@@ -197,9 +274,6 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
         >
           {/* ── Subtitle Banner ── */}
           <View style={styles.headerBanner}>
-            <View style={styles.bannerTagPill}>
-              <Text style={styles.bannerTagText}>CLOUD INFRASTRUCTURE</Text>
-            </View>
             <Text style={styles.bannerTitle}>Cloud Storage Master</Text>
             <Text style={styles.bannerSubtitle}>
               Configure internal document and chat file storage: Microsoft Cloud Storage (Azure / OneDrive), Google Drive (15 GB Free), Local Server Disk, or Google Cloud.
@@ -218,11 +292,11 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
                     ? { backgroundColor: '#eff6ff' }
                     : driver === 'GCS'
                     ? { backgroundColor: '#ecfdf5' }
-                    : { backgroundColor: '#eef2ff' },
+                    : { backgroundColor: colors.primarySubtle },
                 ]}
               >
                 {driver === 'LOCAL' ? (
-                  <HardDriveIcon size={20} color="#4f46e5" />
+                  <HardDriveIcon size={20} color={colors.primary} />
                 ) : driver === 'GDRIVE' ? (
                   <FolderIcon size={20} color="#2563eb" />
                 ) : (
@@ -238,156 +312,88 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
                 <Text style={styles.activeDriverName}>{getDriverTitle(driver)}</Text>
               </View>
             </View>
-
-            <View
-              style={[
-                styles.onlineBadge,
-                driver === 'MICROSOFT'
-                  ? { backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }
-                  : driver === 'GDRIVE'
-                  ? { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }
-                  : driver === 'GCS'
-                  ? { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }
-                  : { backgroundColor: '#eef2ff', borderColor: '#c7d2fe' },
-              ]}
-            >
-              <View
-                style={[
-                  styles.pulseDot,
-                  {
-                    backgroundColor:
-                      driver === 'MICROSOFT'
-                        ? '#0284c7'
-                        : driver === 'GDRIVE'
-                        ? '#2563eb'
-                        : driver === 'GCS'
-                        ? '#059669'
-                        : '#4f46e5',
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.onlineBadgeText,
-                  {
-                    color:
-                      driver === 'MICROSOFT'
-                        ? '#0369a1'
-                        : driver === 'GDRIVE'
-                        ? '#1d4ed8'
-                        : driver === 'GCS'
-                        ? '#047857'
-                        : '#4338ca',
-                  },
-                ]}
-              >
-                Online & Ready
-              </Text>
-            </View>
           </View>
 
-          {/* ── Driver Selection Section ── */}
+          {/* ── Horizontal Swipe Storage Driver Section (Box Type UI) ── */}
+          <View style={styles.swipeSectionContainer}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeading}>SELECT STORAGE DRIVER</Text>
+              <View style={styles.swipeHintBadge}>
+                <Text style={styles.swipeHintText}>Swipe cards →</Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalCardsScroll}
+            >
+              {DRIVER_OPTIONS.map((item) => {
+                const isSelected = driver === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.boxCard,
+                      shadows.sm,
+                      isSelected && {
+                        backgroundColor: item.cardActiveBg,
+                        borderColor: item.cardActiveBorder,
+                        borderWidth: 2,
+                      },
+                    ]}
+                    onPress={() => setDriver(item.key)}
+                    activeOpacity={0.75}
+                  >
+                    {/* Top Row: Provider Icon + Selected Indicator */}
+                    <View style={styles.boxCardTopRow}>
+                      <View style={[styles.boxIconWrap, { backgroundColor: item.iconBg }]}>
+                        {item.icon(isSelected)}
+                      </View>
+
+                      {isSelected ? (
+                        <View style={[styles.boxCheckWrap, { backgroundColor: item.activeColor }]}>
+                          <CheckIcon size={12} color="#ffffff" />
+                        </View>
+                      ) : (
+                        <View style={styles.boxRadioWrap} />
+                      )}
+                    </View>
+
+                    {/* Title */}
+                    <Text style={styles.boxCardTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+
+                    {/* Badge */}
+                    <View style={[styles.boxBadgePill, { backgroundColor: item.badgeBg }]}>
+                      <Text style={[styles.boxBadgeText, { color: item.badgeText }]}>
+                        {item.badge}
+                      </Text>
+                    </View>
+
+                    {/* Description Subtext */}
+                    <Text style={styles.boxCardSubtext} numberOfLines={2}>
+                      {item.subtext}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* ── Main Configuration Card for Selected Driver ── */}
           <View style={[styles.card, shadows.sm]}>
-            <Text style={styles.sectionHeading}>SELECT STORAGE DRIVER</Text>
-
-            <View style={styles.driverOptionsGrid}>
-              {/* 1. Microsoft Cloud */}
-              <TouchableOpacity
-                style={[
-                  styles.driverCard,
-                  driver === 'MICROSOFT' && styles.driverCardSelectedMicrosoft,
-                ]}
-                onPress={() => setDriver('MICROSOFT')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.driverCardRadioRow}>
-                  <View style={[styles.radioCircle, driver === 'MICROSOFT' && styles.radioCircleSkyActive]}>
-                    {driver === 'MICROSOFT' && <View style={styles.radioInnerSky} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.driverTitleRow}>
-                      <Text style={styles.driverTitle}>Microsoft Cloud</Text>
-                      <View style={styles.driverBadgeSky}>
-                        <Text style={styles.driverBadgeSkyText}>Azure/MS365</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.driverSubtext}>
-                      Microsoft Azure Blob Storage & OneDrive integration.
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* 2. Google Drive */}
-              <TouchableOpacity
-                style={[
-                  styles.driverCard,
-                  driver === 'GDRIVE' && styles.driverCardSelectedGDrive,
-                ]}
-                onPress={() => setDriver('GDRIVE')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.driverCardRadioRow}>
-                  <View style={[styles.radioCircle, driver === 'GDRIVE' && styles.radioCircleBlueActive]}>
-                    {driver === 'GDRIVE' && <View style={styles.radioInnerBlue} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.driverTitleRow}>
-                      <Text style={styles.driverTitle}>Google Drive</Text>
-                      <View style={styles.driverBadgeEmerald}>
-                        <Text style={styles.driverBadgeEmeraldText}>15 GB Free</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.driverSubtext}>
-                      Personal Google Drive storage with service account.
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* 3. Local Disk */}
-              <TouchableOpacity
-                style={[
-                  styles.driverCard,
-                  driver === 'LOCAL' && styles.driverCardSelectedLocal,
-                ]}
-                onPress={() => setDriver('LOCAL')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.driverCardRadioRow}>
-                  <View style={[styles.radioCircle, driver === 'LOCAL' && styles.radioCircleIndigoActive]}>
-                    {driver === 'LOCAL' && <View style={styles.radioInnerIndigo} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.driverTitle}>Local Server Disk</Text>
-                    <Text style={styles.driverSubtext}>
-                      Direct storage on your cPanel / Node server disk.
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* 4. Google Cloud Storage */}
-              <TouchableOpacity
-                style={[
-                  styles.driverCard,
-                  driver === 'GCS' && styles.driverCardSelectedGcs,
-                ]}
-                onPress={() => setDriver('GCS')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.driverCardRadioRow}>
-                  <View style={[styles.radioCircle, driver === 'GCS' && styles.radioCircleEmeraldActive]}>
-                    {driver === 'GCS' && <View style={styles.radioInnerEmerald} />}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.driverTitle}>Google Cloud (GCS)</Text>
-                    <Text style={styles.driverSubtext}>
-                      Enterprise GCS bucket with Google Cloud account.
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+            <View style={styles.configCardHeader}>
+              <Text style={styles.configCardHeading}>
+                {driver === 'MICROSOFT'
+                  ? 'MICROSOFT AZURE & ONEDRIVE CONFIG'
+                  : driver === 'GDRIVE'
+                  ? 'GOOGLE DRIVE SERVICE ACCOUNT CONFIG'
+                  : driver === 'GCS'
+                  ? 'GOOGLE CLOUD STORAGE (GCS) CONFIG'
+                  : 'LOCAL SERVER DISK STORAGE'}
+              </Text>
             </View>
 
             {/* ── DRIVER SPECIFIC FIELDS ── */}
@@ -598,7 +604,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
             {driver === 'LOCAL' && (
               <View style={styles.localInfoCard}>
                 <View style={styles.localInfoHeader}>
-                  <HardDriveIcon size={16} color="#4f46e5" />
+                  <HardDriveIcon size={16} color={colors.primary} />
                   <Text style={styles.localInfoTitle}>Local Server Disk Storage Active</Text>
                 </View>
                 <Text style={styles.localInfoDesc}>
@@ -638,12 +644,12 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
                 >
                   {testing ? (
                     <>
-                      <ActivityIndicator size="small" color="#4f46e5" />
+                      <ActivityIndicator size="small" color={colors.primary} />
                       <Text style={styles.testBtnText}>Testing Cloud Connection...</Text>
                     </>
                   ) : (
                     <>
-                      <CheckIcon size={14} color="#4f46e5" />
+                      <CheckIcon size={14} color={colors.primary} />
                       <Text style={styles.testBtnText}>
                         Test {driver === 'MICROSOFT' ? 'Microsoft Cloud' : driver === 'GDRIVE' ? 'Google Drive' : 'GCS'} Connection
                       </Text>
@@ -668,8 +674,8 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
                 >
                   <Defs>
                     <LinearGradient id="saveStorageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <Stop offset="0%" stopColor="#0056cf" />
-                      <Stop offset="100%" stopColor="#4f46e5" />
+                      <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                      <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
                     </LinearGradient>
                   </Defs>
                   <Rect x="0" y="0" width="100" height="100" fill="url(#saveStorageGrad)" />
@@ -743,7 +749,7 @@ const styles = StyleSheet.create({
   bannerTagText: {
     fontSize: 9.5,
     fontWeight: fontWeights.black,
-    color: '#0056cf',
+    color: colors.primary,
     letterSpacing: 0.5,
   },
   bannerTitle: {
@@ -824,6 +830,102 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  /* ── Horizontal Swipe Storage Driver Section ── */
+  swipeSectionContainer: {
+    marginBottom: spacing.md,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  sectionHeading: {
+    fontSize: 11,
+    fontWeight: fontWeights.extrabold,
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+  swipeHintBadge: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  swipeHintText: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+    color: '#64748b',
+  },
+  horizontalCardsScroll: {
+    gap: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  boxCard: {
+    width: 156,
+    minHeight: 180,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  boxCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  boxIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxCheckWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxRadioWrap: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#cbd5e1',
+  },
+  boxCardTitle: {
+    fontSize: 14,
+    fontWeight: fontWeights.extrabold,
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  boxBadgePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  boxBadgeText: {
+    fontSize: 9.5,
+    fontWeight: fontWeights.black,
+    letterSpacing: 0.3,
+  },
+  boxCardSubtext: {
+    fontSize: 10.5,
+    color: colors.textMuted,
+    lineHeight: 14,
+  },
+
   /* ── Main Form Card ── */
   card: {
     backgroundColor: '#ffffff',
@@ -832,135 +934,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  sectionHeading: {
+  configCardHeader: {
+    paddingBottom: 10,
+    marginBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  configCardHeading: {
     fontSize: 11,
     fontWeight: fontWeights.extrabold,
     color: colors.textSecondary,
-    letterSpacing: 0.4,
-    marginBottom: spacing.sm,
+    letterSpacing: 0.5,
   },
-  driverOptionsGrid: {
-    gap: 8,
-    marginBottom: spacing.md,
-  },
-  driverCard: {
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f8fafc',
-    padding: spacing.sm + 2,
-  },
-  driverCardSelectedMicrosoft: {
-    borderColor: '#0284c7',
-    backgroundColor: '#f0f9ff',
-  },
-  driverCardSelectedGDrive: {
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
-  },
-  driverCardSelectedLocal: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#eef2ff',
-  },
-  driverCardSelectedGcs: {
-    borderColor: '#059669',
-    backgroundColor: '#ecfdf5',
-  },
-  driverCardRadioRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  radioCircleSkyActive: {
-    borderColor: '#0284c7',
-  },
-  radioInnerSky: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#0284c7',
-  },
-  radioCircleBlueActive: {
-    borderColor: '#2563eb',
-  },
-  radioInnerBlue: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2563eb',
-  },
-  radioCircleIndigoActive: {
-    borderColor: '#4f46e5',
-  },
-  radioInnerIndigo: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4f46e5',
-  },
-  radioCircleEmeraldActive: {
-    borderColor: '#059669',
-  },
-  radioInnerEmerald: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#059669',
-  },
-  driverTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  driverTitle: {
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.extrabold,
-    color: colors.textPrimary,
-  },
-  driverBadgeSky: {
-    backgroundColor: '#e0f2fe',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: borderRadius.sm,
-  },
-  driverBadgeSkyText: {
-    fontSize: 9,
-    fontWeight: fontWeights.black,
-    color: '#0369a1',
-  },
-  driverBadgeEmerald: {
-    backgroundColor: '#d1fae5',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: borderRadius.sm,
-  },
-  driverBadgeEmeraldText: {
-    fontSize: 9,
-    fontWeight: fontWeights.black,
-    color: '#047857',
-  },
-  driverSubtext: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-
-  /* ── Driver Config Box ── */
   driverConfigBox: {
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    paddingTop: spacing.sm,
   },
   guideCalloutSky: {
     backgroundColor: '#f0f9ff',
@@ -1023,7 +1010,7 @@ const styles = StyleSheet.create({
   toggleKeyText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
   input: {
     backgroundColor: '#f8fafc',
@@ -1129,7 +1116,7 @@ const styles = StyleSheet.create({
   testBtnText: {
     fontSize: fontSizes.xs,
     fontWeight: fontWeights.bold,
-    color: '#4f46e5',
+    color: colors.primary,
   },
   saveBtn: {
     height: 48,

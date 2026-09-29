@@ -269,6 +269,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
       <AppHeader
         title="Create User Account"
         showBack
+        rightAction
         onBack={() => navigation.goBack()}
       />
 
@@ -301,7 +302,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
           <View style={[styles.card, shadows.sm]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderIconBox}>
-                <UserIcon size={18} color="#0056cf" />
+                <UserIcon size={18} color={colors.primary} />
               </View>
               <View style={styles.cardHeaderTextBox}>
                 <Text style={styles.cardHeaderTitle}>1. Account Identity & Credentials</Text>
@@ -385,7 +386,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.autoGenBtn}
                 >
-                  <RefreshIcon size={12} color="#0056cf" />
+                  <RefreshIcon size={12} color={colors.primary} />
                   <Text style={styles.autoGenBtnText}>Auto-Generate</Text>
                 </TouchableOpacity>
               </View>
@@ -442,7 +443,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 </TouchableOpacity>
               </View>
               <View style={styles.inputWrapper}>
-                <CalendarIcon size={16} color="#0056cf" />
+                <CalendarIcon size={16} color={colors.primary} />
                 <TextInput
                   style={[styles.textInput, styles.fontMono]}
                   placeholder="YYYY-MM-DD"
@@ -459,7 +460,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
             <View style={styles.deviceVerifBox}>
               <View style={styles.deviceVerifTextCol}>
                 <View style={styles.deviceVerifHeaderRow}>
-                  <LockIcon size={14} color="#0056cf" />
+                  <LockIcon size={14} color={colors.primary} />
                   <Text style={styles.deviceVerifTitle}>
                     Require Device Verification on First Login
                   </Text>
@@ -471,7 +472,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
               <Switch
                 value={deviceVerificationRequired}
                 onValueChange={setDeviceVerificationRequired}
-                trackColor={{ false: '#e2e8f0', true: '#0056cf' }}
+                trackColor={{ false: '#e2e8f0', true: colors.primary }}
                 thumbColor={deviceVerificationRequired ? '#ffffff' : '#f8fafc'}
                 ios_backgroundColor="#e2e8f0"
               />
@@ -650,8 +651,8 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
               >
                 <Defs>
                   <LinearGradient id="submitUserGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <Stop offset="0%" stopColor="#0056cf" />
-                    <Stop offset="100%" stopColor="#4f46e5" />
+                    <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                    <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
                   </LinearGradient>
                 </Defs>
                 <Rect x="0" y="0" width="100" height="100" fill="url(#submitUserGrad)" />
@@ -666,7 +667,7 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 ) : (
                   <>
                     <View style={styles.submitIconCircle}>
-                      <PlusIcon size={14} color="#0056cf" />
+                      <PlusIcon size={14} color={colors.buttonPrimary} />
                     </View>
                     <Text style={styles.submitButtonText}>Create User Account</Text>
                   </>
@@ -726,17 +727,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   headerTagPill: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.primaryMuted,
   },
   headerTagText: {
     fontSize: 10,
     fontWeight: fontWeights.black,
-    color: '#0056cf',
+    color: colors.primary,
     letterSpacing: 0.5,
   },
   headerBannerTitle: {
@@ -771,7 +772,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: borderRadius.lg,
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
@@ -790,17 +791,17 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   stepBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.primaryMuted,
   },
   stepBadgeText: {
     fontSize: 9,
     fontWeight: fontWeights.black,
-    color: '#0056cf',
+    color: colors.primary,
   },
   inputGroup: {
     marginBottom: spacing.md,
@@ -830,12 +831,12 @@ const styles = StyleSheet.create({
   autoGenBtnText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
   todayText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -960,7 +961,7 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#0056cf',
+    color: colors.primary,
   },
   quickActionDivider: {
     fontSize: 10,
@@ -982,8 +983,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   deptCheckChipChecked: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#93c5fd',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.primaryMuted,
   },
   deptCheckbox: {
     width: 16,
@@ -997,8 +998,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   deptCheckboxChecked: {
-    backgroundColor: '#0056cf',
-    borderColor: '#0056cf',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   deptChipText: {
     fontSize: fontSizes.xs,
@@ -1006,7 +1007,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   deptChipTextChecked: {
-    color: '#0056cf',
+    color: colors.primary,
     fontWeight: fontWeights.bold,
   },
   noDeptsBox: {

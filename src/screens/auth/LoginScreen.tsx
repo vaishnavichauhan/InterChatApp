@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import Svg, { Path, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
 import { AppInput } from '../../components/common/AppInput';
@@ -24,6 +24,7 @@ import {
 import { loginUser } from '../../api/authApi';
 import { getDeviceId } from '../../utils/device';
 import { useAuthStore } from '../../store/authStore';
+import { EpoxyHouseBrandLogo } from '../../components/common/EpoxyHouseBrandLogo';
 
 interface LoginScreenProps {
   navigation: any;
@@ -94,18 +95,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingTop: topInset + 12, paddingBottom: Math.max(insets.bottom, 24) },
+          { paddingBottom: Math.max(insets.bottom, 24) },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        {/* Navigation Bar */}
-        <View style={styles.topNavigation}>
+        {/* ── Top Navigation Bar ── */}
+        <View style={[styles.topBar, { paddingTop: topInset + 8 }]}>
           {navigation.canGoBack?.() ? (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
-              style={[styles.backButton, shadows.sm]}
+              style={styles.backButton}
               activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <ArrowLeftIcon size={18} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -114,92 +117,70 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           )}
         </View>
 
-        {/* Brand Hero Header: App Logo and "InterChat" */}
-        <View style={styles.brandHeroContainer}>
-          {/* Logo Badge with Aura */}
-          <View style={styles.logoBadgeWrapper}>
-            <View style={styles.logoAura} />
-            <View style={[styles.logoTile, shadows.md]}>
-              <Svg
-                width={36}
-                height={36}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <Path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z" />
-                <Path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1" />
-              </Svg>
-            </View>
-          </View>
-
-          {/* InterChat Branding */}
-          <View style={styles.brandTitleRow}>
-            <Text style={styles.brandTitleText}>
-              Inter<Text style={styles.brandTitleAccent}>Chat</Text>
-            </Text>
-            
-          </View>
+        {/* ── Only Logo at Top ── */}
+        <View style={styles.logoContainer}>
+          <EpoxyHouseBrandLogo size="lg" variant="dark" />
         </View>
 
-        {/* Login Form Card */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Welcome back</Text>
-          <Text style={styles.formSubtitle}>
-            Please enter your credentials to access your workspace.
-          </Text>
+        {/* ── Login Form Card ── */}
+        <View style={styles.formContainer}>
+          <View style={[styles.formCard, shadows.sm]}>
+            <View style={styles.formTitleRow}>
+              <View style={styles.titleAccentBar} />
+              <Text style={styles.formTitle}>Welcome Back</Text>
+            </View>
+            <Text style={styles.formSubtitle}>
+              Enter your enterprise credentials to access your channels and chat messages.
+            </Text>
 
-          <AppInput
-            label="Username"
-            placeholder="Write your username"
-            value={username}
-            onChangeText={setUsername}
-            leftIcon={<UserIcon size={18} color={colors.textLight} />}
-            autoCapitalize="none"
-          />
+            <AppInput
+              label="Username"
+              placeholder="Write your username"
+              value={username}
+              onChangeText={setUsername}
+              leftIcon={<UserIcon size={18} color={colors.primary} />}
+              autoCapitalize="none"
+            />
 
-          <AppInput
-            label="Password"
-            placeholder="Write your password"
-            value={password}
-            onChangeText={setPassword}
-            isPassword
-            leftIcon={<LockIcon size={18} color={colors.textLight} />}
-          />
+            <AppInput
+              label="Password"
+              placeholder="Write your password"
+              value={password}
+              onChangeText={setPassword}
+              isPassword
+              leftIcon={<LockIcon size={18} color={colors.primary} />}
+            />
 
-          <View style={styles.submitWrapper}>
-            <TouchableOpacity
-              style={[styles.signInButton, shadows.lg]}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.88}
-            >
-              {/* SVG Gradient inside the pill button matching WelcomeScreen */}
-              <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id="loginBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <Stop offset="0%" stopColor="#4f46e5" />
-                    <Stop offset="50%" stopColor="#2563eb" />
-                    <Stop offset="100%" stopColor="#06b6d4" />
-                  </LinearGradient>
-                </Defs>
-                <Rect width="100%" height="100%" rx={28} fill="url(#loginBtnGrad)" />
-              </Svg>
+            <View style={styles.submitWrapper}>
+              <TouchableOpacity
+                style={[styles.signInButton, shadows.lg]}
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.88}
+              >
+                {/* SVG Gradient inside the pill button matching WelcomeScreen */}
+                <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                  <Defs>
+                    <LinearGradient id="loginBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                      <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" rx={28} fill="url(#loginBtnGrad)" />
+                </Svg>
 
-              {loading ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <View style={styles.buttonInnerContent}>
-                  <Text style={styles.signInButtonText}>Sign In</Text>
-                  <View style={styles.arrowCircle}>
-                    <ArrowRightIcon size={16} color="#2563eb" />
+                {loading ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <View style={styles.buttonInnerContent}>
+                    <Text style={styles.signInButtonText}>Sign In</Text>
+                    <View style={styles.arrowCircle}>
+                      <ArrowRightIcon size={16} color={colors.buttonPrimary} />
+                    </View>
                   </View>
-                </View>
-              )}
-            </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -214,110 +195,77 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'flex-start',
+    backgroundColor: '#ffffff',
   },
-  topNavigation: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    minHeight: 44,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   backButtonPlaceholder: {
-    height: 40,
+    height: 38,
   },
-
-  /* Brand Hero */
-  brandHeroContainer: {
+  logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  logoBadgeWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    position: 'relative',
-  },
-  logoAura: {
-    position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(0, 86, 207, 0.1)',
-  },
-  logoTile: {
-    width: 68,
-    height: 68,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  brandTitleText: {
-    fontSize: 26,
-    fontWeight: fontWeights.black,
-    color: colors.textPrimary,
-    letterSpacing: 0.3,
-  },
-  brandTitleAccent: {
-    color: colors.primary,
-  },
-  enterprisePill: {
-    backgroundColor: colors.primarySubtle,
-    borderWidth: 1,
-    borderColor: colors.primaryMuted,
-    borderRadius: borderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  enterprisePillText: {
-    fontSize: 9,
-    fontWeight: fontWeights.extrabold,
-    color: colors.primary,
-    letterSpacing: 0.5,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
 
   /* Form Section */
+  formContainer: {
+    paddingHorizontal: spacing.lg,
+  },
   formCard: {
-    paddingHorizontal: spacing.xs,
-    paddingTop: spacing.xs,
-    marginBottom: spacing.xl,
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  formTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  titleAccentBar: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
   },
   formTitle: {
     fontSize: fontSizes.xl,
     fontWeight: fontWeights.black,
     color: colors.textPrimary,
-    marginBottom: 4,
   },
   formSubtitle: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.xs,
     color: colors.textMuted,
-    lineHeight: 19,
+    lineHeight: 18,
     marginBottom: spacing.lg,
   },
   submitWrapper: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   signInButton: {
     width: '100%',
-    height: 56,
-    borderRadius: 28,
+    height: 54,
+    borderRadius: 27,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { ConversationItem } from '../../components/chat/ConversationItem';
@@ -36,6 +37,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
   const [activeTab, setActiveTab] = useState<'all' | 'groups' | 'direct'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Initial mount: load conversations and attach socket listeners
   useEffect(() => {
     loadConversations();
     setupSocketListeners();
@@ -43,6 +45,13 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
       cleanupSocketListeners();
     };
   }, [loadConversations, setupSocketListeners, cleanupSocketListeners]);
+
+  // Screen focus: refresh conversations whenever user comes to or navigates back to this screen
+  useFocusEffect(
+    useCallback(() => {
+      loadConversations(false);
+    }, [loadConversations])
+  );
 
   const filteredConversations = useMemo(() => {
     let list = conversations;
@@ -74,6 +83,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
   return (
     <View style={styles.container}>
       <AppHeader
+        showLogo
         rightAction={
           <View style={styles.headerActions}>
             <TouchableOpacity

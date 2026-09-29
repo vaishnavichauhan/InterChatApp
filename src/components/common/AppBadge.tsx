@@ -15,7 +15,7 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
 }) => {
   return (
     <View style={[styles.base, styles[variant], style]}>
-      <Text style={[styles.textBase, styles[`text_${variant}`]]}>{label}</Text>
+      <Text style={[styles.textBase, styles[`text_${variant}`]]} numberOfLines={1}>{label}</Text>
     </View>
   );
 };

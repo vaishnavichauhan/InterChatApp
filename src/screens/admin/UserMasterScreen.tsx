@@ -14,6 +14,7 @@ import {
   Switch,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
@@ -35,6 +36,7 @@ import {
   LockIcon,
   ClockIcon,
   ShieldCheckIcon,
+  MailIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getAllUsers,
@@ -54,6 +56,7 @@ interface UserMasterScreenProps {
 }
 
 export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'users' | 'devices' | 'audit'>('users');
   const [users, setUsers] = useState<any[]>([]);
   const [pendingDevices, setPendingDevices] = useState<any[]>([]);
@@ -443,8 +446,8 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           >
             <Defs>
               <LinearGradient id="createUserBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor="#0056cf" />
-                <Stop offset="100%" stopColor="#4f46e5" />
+                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
               </LinearGradient>
             </Defs>
             <Rect x="0" y="0" width="100" height="100" fill="url(#createUserBtnGrad)" />
@@ -452,7 +455,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
 
           <View style={styles.createUserBtnInner}>
             <View style={styles.createUserIconCircle}>
-              <PlusIcon size={12} color="#0056cf" />
+              <PlusIcon size={12} color={colors.buttonPrimary} />
             </View>
             <Text style={styles.createUserBtnText}>Create User</Text>
           </View>
@@ -467,7 +470,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           activeOpacity={0.7}
         >
           <View style={styles.fullWidthTabInner}>
-            {/* <UsersIcon size={14} color={activeTab === 'users' ? '#0056cf' : '#64748b'} /> */}
+            {/* <UsersIcon size={14} color={activeTab === 'users' ? colors.primary : '#64748b'} /> */}
             <Text
               style={[styles.fullWidthTabText, activeTab === 'users' && styles.fullWidthTabTextActive]}
               numberOfLines={1}
@@ -486,7 +489,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           activeOpacity={0.7}
         >
           <View style={styles.fullWidthTabInner}>
-            {/* <MobileIcon size={14} color={activeTab === 'devices' ? '#0056cf' : '#64748b'} /> */}
+            {/* <MobileIcon size={14} color={activeTab === 'devices' ? colors.primary : '#64748b'} /> */}
             <Text
               style={[styles.fullWidthTabText, activeTab === 'devices' && styles.fullWidthTabTextActive]}
               numberOfLines={1}
@@ -505,7 +508,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           activeOpacity={0.7}
         >
           <View style={styles.fullWidthTabInner}>
-            {/* <ClockIcon size={14} color={activeTab === 'audit' ? '#0056cf' : '#64748b'} /> */}
+            {/* <ClockIcon size={14} color={activeTab === 'audit' ? colors.primary : '#64748b'} /> */}
             <Text
               style={[styles.fullWidthTabText, activeTab === 'audit' && styles.fullWidthTabTextActive]}
               numberOfLines={1}
@@ -534,7 +537,10 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           ListHeaderComponent={renderUsersHeader}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 24) + 64 },
+          ]}
           renderItem={({ item }) => {
             const isActive = Boolean(item.active);
             const isAdm = item.role === 'admin' || (item.type_name && item.type_name.toLowerCase().includes('admin'));
@@ -542,10 +548,18 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
 
             return (
               <View style={[styles.userCard, shadows.sm]}>
-                {/* ── Card Header: Avatar + User & Email + Status ── */}
+                {/* ── Card Header: Avatar with Status Indicator + User & Email + Status Pill ── */}
                 <View style={styles.cardHeaderRow}>
-                  <View style={[styles.avatarBox, isAdm && styles.avatarBoxAdmin]}>
-                    <Text style={styles.avatarText}>{getInitials(item.name || item.username)}</Text>
+                  <View style={styles.avatarWrapper}>
+                    <View style={[styles.avatarBox, isAdm && styles.avatarBoxAdmin]}>
+                      <Text style={styles.avatarText}>{getInitials(item.name || item.username)}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.avatarStatusBadge,
+                        { backgroundColor: isActive ? '#10b981' : '#f59e0b' },
+                      ]}
+                    />
                   </View>
 
                   <View style={styles.userInfoCol}>
@@ -557,9 +571,12 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                         <Text style={styles.usernameText}>@{item.username || '—'}</Text>
                       </View>
                     </View>
-                    <Text style={styles.userEmail} numberOfLines={1}>
-                      {item.email}
-                    </Text>
+                    <View style={styles.emailRow}>
+                      <MailIcon size={11} color={colors.textLight} />
+                      <Text style={styles.userEmail} numberOfLines={1}>
+                        {item.email}
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Account Status Pill */}
@@ -572,13 +589,13 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                     <View
                       style={[
                         styles.statusPulseDot,
-                        { backgroundColor: isActive ? '#10b981' : '#f59e0b' },
+                        { backgroundColor: isActive ? '#10b981' : '#f43f5e' },
                       ]}
                     />
                     <Text
                       style={[
                         styles.statusPillText,
-                        { color: isActive ? '#047857' : '#b45309' },
+                        { color: isActive ? '#047857' : '#be123c' },
                       ]}
                     >
                       {isActive ? 'Active' : 'Deactivated'}
@@ -590,7 +607,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                 <View style={styles.rolesSection}>
                   {/* Role / Type */}
                   <View style={[styles.roleBadge, isAdm ? styles.roleBadgeAdmin : styles.roleBadgeUser]}>
-                    <ShieldUserIcon size={12} color={isAdm ? '#7e22ce' : '#1d4ed8'} />
+                    <ShieldUserIcon size={12} color={isAdm ? '#7c3aed' : colors.primary} />
                     <Text style={[styles.roleBadgeText, isAdm ? styles.roleBadgeTextAdmin : styles.roleBadgeTextUser]}>
                       {item.type_name || (isAdm ? 'Admin' : 'Standard Employee')}
                     </Text>
@@ -599,7 +616,9 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                   {/* Department(s) Badges */}
                   <View style={styles.deptBadgesRow}>
                     {userDepts.length === 0 ? (
-                      <Text style={styles.unassignedText}>Unassigned</Text>
+                      <View style={styles.unassignedPill}>
+                        <Text style={styles.unassignedText}>Unassigned Dept</Text>
+                      </View>
                     ) : (
                       userDepts.map((d: any, idx: number) => {
                         const isDeptAdmin = d.department_role === 'ADMIN';
@@ -611,7 +630,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                               isDeptAdmin ? styles.deptPillAdmin : styles.deptPillUser,
                             ]}
                           >
-                            <BuildingIcon size={10} color={isDeptAdmin ? '#7e22ce' : '#2563eb'} />
+                            <BuildingIcon size={10} color={isDeptAdmin ? '#7e22ce' : colors.primary} />
                             <Text
                               style={[
                                 styles.deptPillText,
@@ -628,68 +647,110 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                   </View>
                 </View>
 
-                {/* ── Metadata Row 1: Mobile & Date of Joining ── */}
-                <View style={styles.metaRow}>
-                  {/* Mobile */}
-                  <View style={styles.metaItem}>
-                    <PhoneIcon size={12} color={colors.textLight} />
-                    <Text style={styles.metaText}>{item.mob_no || '—'}</Text>
-                  </View>
+                {/* ── 2x2 Info Grid: Phone, Joined, Device & Security Lock ── */}
+                <View style={styles.infoGrid}>
+                  {/* Row 1: Phone & Joined */}
+                  <View style={styles.gridRow}>
+                    <View style={styles.gridCell}>
+                      <View style={[styles.gridIconCircle, { backgroundColor: '#e0e7ff' }]}>
+                        <PhoneIcon size={12} color="#4338ca" />
+                      </View>
+                      <View style={styles.gridCellContent}>
+                        <Text style={styles.gridLabel}>Phone</Text>
+                        <Text style={styles.gridValue} numberOfLines={1}>
+                          {item.mob_no || '—'}
+                        </Text>
+                      </View>
+                    </View>
 
-                  {/* Date of Joining */}
-                  <View style={styles.metaItem}>
-                    <CalendarIcon size={12} color={colors.textLight} />
-                    <Text style={styles.metaText}>
-                      Joined: {item.date_of_join ? new Date(item.date_of_join).toLocaleDateString() : '—'}
-                    </Text>
-                  </View>
-                </View>
+                    <View style={styles.gridVerticalDivider} />
 
-                {/* ── Metadata Row 2: Device Status & Require Device Verification ── */}
-                <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 2, marginBottom: spacing.sm }]}>
-                  {/* Device Status */}
-                  <View style={styles.metaItem}>
-                    <MobileIcon size={12} color={colors.textLight} />
-                    <View
-                      style={[
-                        styles.deviceStatusPill,
-                        item.device_status === 'approved'
-                          ? styles.deviceStatusApproved
-                          : item.device_status === 'pending'
-                          ? styles.deviceStatusPending
-                          : styles.deviceStatusNone,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.deviceStatusText,
-                          item.device_status === 'approved'
-                            ? styles.deviceStatusTextApproved
-                            : item.device_status === 'pending'
-                            ? styles.deviceStatusTextPending
-                            : styles.deviceStatusTextNone,
-                        ]}
-                      >
-                        {item.device_status === 'approved'
-                          ? 'Approved'
-                          : item.device_status === 'pending'
-                          ? 'Pending'
-                          : 'No Device'}
-                      </Text>
+                    <View style={styles.gridCell}>
+                      <View style={[styles.gridIconCircle, { backgroundColor: '#e0f2fe' }]}>
+                        <CalendarIcon size={12} color="#0284c7" />
+                      </View>
+                      <View style={styles.gridCellContent}>
+                        <Text style={styles.gridLabel}>Joined</Text>
+                        <Text style={styles.gridValue} numberOfLines={1}>
+                          {item.date_of_join ? new Date(item.date_of_join).toLocaleDateString() : '—'}
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
-                  {/* Device Lock / Verification Required */}
-                  <View style={styles.metaItem}>
-                    <LockIcon size={12} color={item.device_verification_required ? '#0056cf' : colors.textLight} />
-                    <Text
-                      style={[
-                        styles.metaText,
-                        Boolean(item.device_verification_required) && { color: '#0056cf', fontWeight: fontWeights.semibold },
-                      ]}
-                    >
-                      {item.device_verification_required ? 'Lock: Enforced' : 'Lock: Optional'}
-                    </Text>
+                  <View style={styles.gridHorizontalDivider} />
+
+                  {/* Row 2: Device Status & Lock Enforcement */}
+                  <View style={styles.gridRow}>
+                    <View style={styles.gridCell}>
+                      <View style={[styles.gridIconCircle, { backgroundColor: '#fef3c7' }]}>
+                        <MobileIcon size={12} color="#d97706" />
+                      </View>
+                      <View style={styles.gridCellContent}>
+                        <Text style={styles.gridLabel}>Device</Text>
+                        <View
+                          style={[
+                            styles.deviceStatusPill,
+                            item.device_status === 'approved'
+                              ? styles.deviceStatusApproved
+                              : item.device_status === 'pending'
+                              ? styles.deviceStatusPending
+                              : styles.deviceStatusNone,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.deviceStatusText,
+                              item.device_status === 'approved'
+                                ? styles.deviceStatusTextApproved
+                                : item.device_status === 'pending'
+                                ? styles.deviceStatusTextPending
+                                : styles.deviceStatusTextNone,
+                            ]}
+                          >
+                            {item.device_status === 'approved'
+                              ? 'Approved'
+                              : item.device_status === 'pending'
+                              ? 'Pending'
+                              : 'No Device'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.gridVerticalDivider} />
+
+                    <View style={styles.gridCell}>
+                      <View
+                        style={[
+                          styles.gridIconCircle,
+                          {
+                            backgroundColor: item.device_verification_required
+                              ? '#dbeafe'
+                              : '#f1f5f9',
+                          },
+                        ]}
+                      >
+                        <LockIcon
+                          size={12}
+                          color={item.device_verification_required ? colors.primary : colors.textLight}
+                        />
+                      </View>
+                      <View style={styles.gridCellContent}>
+                        <Text style={styles.gridLabel}>Lock Verification</Text>
+                        <Text
+                          style={[
+                            styles.gridValue,
+                            Boolean(item.device_verification_required) && {
+                              color: colors.primary,
+                              fontWeight: fontWeights.bold,
+                            },
+                          ]}
+                        >
+                          {item.device_verification_required ? 'Enforced' : 'Optional'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
 
@@ -700,7 +761,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                     onPress={() => handleOpenEdit(item)}
                     activeOpacity={0.7}
                   >
-                    <EditIcon size={13} color="#4f46e5" />
+                    <EditIcon size={13} color={colors.primary} />
                     <Text style={styles.actionBtnEditText}>Edit</Text>
                   </TouchableOpacity>
 
@@ -756,7 +817,10 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 24) + 64 },
+          ]}
           renderItem={({ item }) => {
             const hasRolePerm = Boolean(item.has_role_download_perm !== 0 && item.has_role_download_perm !== false);
 
@@ -870,7 +934,10 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
               </View>
             </View>
           }
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 24) + 64 },
+          ]}
           renderItem={({ item }) => {
             const isApproved = item.status === 'approved';
             const isPending = item.status === 'pending';
@@ -1167,7 +1234,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={[styles.modalHeaderIcon, { backgroundColor: '#eef2ff' }]}>
-                  <EditIcon size={20} color="#4f46e5" />
+                  <EditIcon size={20} color={colors.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>Edit User Profile</Text>
@@ -1312,7 +1379,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   listContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 80,
   },
   centerLoading: {
     flex: 1,
@@ -1376,7 +1443,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   fullWidthTabTextActive: {
-    color: '#0056cf',
+    color: colors.primary,
     fontWeight: fontWeights.extrabold,
   },
   fullWidthTabIndicator: {
@@ -1390,7 +1457,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 2,
   },
   fullWidthTabIndicatorActive: {
-    backgroundColor: '#0056cf',
+    backgroundColor: colors.primary,
   },
 
   /* ── Inside Screen Header ── */
@@ -1414,7 +1481,7 @@ const styles = StyleSheet.create({
   createUserBtn: {
     borderRadius: borderRadius.md,
     overflow: 'hidden',
-    backgroundColor: '#0056cf',
+    backgroundColor: colors.buttonPrimary,
     flexShrink: 0,
     justifyContent: 'center',
   },
@@ -1506,35 +1573,54 @@ const styles = StyleSheet.create({
   /* ── User Card Architecture ── */
   userCard: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
+    borderRadius: 16,
     padding: spacing.md,
     marginHorizontal: spacing.lg,
     marginVertical: 6,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginRight: spacing.sm + 2,
+  },
   avatarBox: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.sm,
+    marginRight:3
   },
   avatarBoxAdmin: {
     backgroundColor: '#7c3aed',
   },
   avatarText: {
     color: '#ffffff',
-    fontSize: 13,
-    fontWeight: fontWeights.black,
+    fontSize: 15,
+    fontWeight: fontWeights.bold,
     letterSpacing: 0.5,
+  },
+  avatarStatusBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   userInfoCol: {
     flex: 1,
@@ -1547,32 +1633,38 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   userName: {
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.black,
+    fontSize: 14.5,
+    fontWeight: fontWeights.bold,
     color: colors.textPrimary,
   },
   usernamePill: {
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
     borderRadius: 4,
   },
   usernameText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontFamily: 'monospace',
     fontWeight: fontWeights.bold,
     color: colors.textMuted,
   },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
   userEmail: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: colors.textMuted,
-    marginTop: 1,
+    flexShrink: 1,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 3.5,
     borderRadius: borderRadius.full,
     borderWidth: 1,
     gap: 4,
@@ -1582,8 +1674,8 @@ const styles = StyleSheet.create({
     borderColor: '#a7f3d0',
   },
   statusPillInactive: {
-    backgroundColor: '#fef3c7',
-    borderColor: '#fde68a',
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
   },
   statusPulseDot: {
     width: 6,
@@ -1592,8 +1684,8 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontSize: 9.5,
-    fontWeight: fontWeights.black,
-    letterSpacing: 0.4,
+    fontWeight: fontWeights.bold,
+    letterSpacing: 0.3,
   },
 
   /* ── Role & Departments ── */
@@ -1602,24 +1694,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: 6,
-    marginBottom: spacing.sm,
+    marginBottom: 6,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: borderRadius.md,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 6,
     borderWidth: 1,
     gap: 4,
   },
   roleBadgeAdmin: {
-    backgroundColor: '#f5f3ff',
-    borderColor: '#ddd6fe',
+    backgroundColor: '#faf5ff',
+    borderColor: '#e9d5ff',
   },
   roleBadgeUser: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.primaryMuted,
   },
   roleBadgeText: {
     fontSize: 10,
@@ -1629,7 +1721,7 @@ const styles = StyleSheet.create({
     color: '#7c3aed',
   },
   roleBadgeTextUser: {
-    color: '#1d4ed8',
+    color: colors.primary,
   },
   deptBadgesRow: {
     flexDirection: 'row',
@@ -1640,19 +1732,19 @@ const styles = StyleSheet.create({
   deptPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    gap: 3,
+    gap: 3.5,
   },
   deptPillAdmin: {
     backgroundColor: '#faf5ff',
     borderColor: '#e9d5ff',
   },
   deptPillUser: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#dbeafe',
+    backgroundColor: '#f8fafc',
+    borderColor: '#e2e8f0',
   },
   deptPillText: {
     fontSize: 9.5,
@@ -1662,20 +1754,81 @@ const styles = StyleSheet.create({
     color: '#6b21a8',
   },
   deptPillTextUser: {
-    color: '#1e40af',
+    color: '#475569',
   },
   starText: {
     color: '#7e22ce',
     fontSize: 9,
     fontWeight: fontWeights.black,
   },
+  unassignedPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#f1f5f9',
+  },
   unassignedText: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: colors.textLight,
     fontStyle: 'italic',
   },
 
-  /* ── Metadata Row ── */
+  /* ── 2x2 Info Grid ── */
+  infoGrid: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 10,
+    marginVertical: 8,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gridCell: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  gridCellContent: {
+    flex: 1,
+  },
+  gridIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridVerticalDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#e2e8f0',
+    marginHorizontal: 8,
+  },
+  gridHorizontalDivider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: 8,
+  },
+  gridLabel: {
+    fontSize: 9,
+    fontWeight: fontWeights.semibold,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  gridValue: {
+    fontSize: 11,
+    fontWeight: fontWeights.medium,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+
+  /* ── Metadata Row (For Audit / Device Tab) ── */
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1696,9 +1849,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   deviceStatusPill: {
-    paddingHorizontal: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
+    marginTop: 1,
   },
   deviceStatusApproved: {
     backgroundColor: '#dcfce7',
@@ -1727,50 +1882,48 @@ const styles = StyleSheet.create({
   cardActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    gap: spacing.sm,
+    paddingTop: 6,
+    gap: 8,
   },
   actionBtnEdit: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eef2ff',
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.primarySubtle,
+    paddingVertical: 7.5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: colors.primaryMuted,
     gap: 4,
   },
   actionBtnEditText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: fontWeights.bold,
-    color: '#4f46e5',
+    color: colors.primary,
   },
   actionBtnToggle: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    paddingVertical: 7.5,
+    borderRadius: 8,
     borderWidth: 1,
   },
   actionBtnDeactivate: {
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
   },
   actionBtnActivate: {
     backgroundColor: '#ecfdf5',
     borderColor: '#a7f3d0',
   },
   actionBtnToggleText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: fontWeights.bold,
   },
   actionBtnDeactivateText: {
-    color: '#d97706',
+    color: '#e11d48',
   },
   actionBtnActivateText: {
     color: '#059669',
@@ -1780,15 +1933,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fef2f2',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 7.5,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#fecaca',
-    gap: 3,
+    gap: 4,
   },
   actionBtnRevokeText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: fontWeights.bold,
     color: '#ef4444',
   },

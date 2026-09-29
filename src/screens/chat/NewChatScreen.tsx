@@ -72,8 +72,8 @@ export const NewChatScreen: React.FC<NewChatScreenProps> = ({ navigation }) => {
     <View style={styles.container}>
       <AppHeader
         title="New Direct Chat"
-        subtitle="Start 1-on-1 team discussion"
         showBack
+        
         onBack={() => navigation.goBack()}
       />
 
@@ -89,9 +89,6 @@ export const NewChatScreen: React.FC<NewChatScreenProps> = ({ navigation }) => {
             autoFocus
           />
         </View>
-        <Text style={styles.hintText}>
-          💡 Find coworkers across any organizational department.
-        </Text>
       </View>
 
       {loading ? (

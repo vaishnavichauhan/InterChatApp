@@ -1,57 +1,69 @@
-// Theme Colors matching the Web Application
+// Light Red Theme Colors
 export const colors = {
-  // Brand Blue
-  primary: '#0056cf',
-  primaryDark: '#0040a1',
-  primaryLight: '#0066ff',
-  primaryMuted: '#e0efff',
-  primarySubtle: '#f0f7ff',
+  // Soft, pleasant light red for backgrounds and badges
+  primary: '#EF5350',
+  primaryDark: '#E04848',
+  primaryLight: '#F87171',
+  primaryMuted: '#FEE2E2',
+  primarySubtle: '#FFF5F5',
 
-  // Gradients (represented as primary/secondary pairs)
-  brandGradient: ['#0056cf', '#4f46e5'],
-  activityGradient: ['#f59e0b', '#f43f5e'],
-  announcementGradient: ['#7c3aed', '#9333ea'],
-  groupGradient: ['#6366f1', '#2563eb'],
-  directGradient: ['#2563eb', '#06b6d4'],
-  darkHeroGradient: ['#1e3a8a', '#312e81', '#0f172a'],
+  // Top Screen Hero Curved Wave Gradient (Soft Light Red - User Perfect)
+  heroGradient: ['#F87171', '#EF5350', '#E04848'] as const,
+  heroGradientStart: '#F87171',
+  heroGradientMid: '#EF5350',
+  heroGradientEnd: '#E04848',
+
+  // Reusable Action Button Red (Rich, vibrant true red for CTA buttons)
+  buttonPrimary: '#E53935',
+  buttonGradient: ['#F04848', '#D32F2F'] as const,
+  buttonGradientStart: '#F04848',
+  buttonGradientEnd: '#D32F2F',
+
+  // Gradients (soft, elegant transitions)
+  brandGradient: ['#F87171', '#E53935'] as const,
+  activityGradient: ['#FB923C', '#E53935'] as const,
+  announcementGradient: ['#F87171', '#E53935'] as const,
+  groupGradient: ['#F87171', '#D32F2F'] as const,
+  directGradient: ['#F87171', '#E53935'] as const,
+  darkHeroGradient: ['#F87171', '#EF5350', '#E04848'] as const,
 
   // Neutrals / Surfaces
-  background: '#f8fafc', // slate-50
-  surface: '#ffffff',
-  surfaceCard: '#ffffff',
-  surfaceSubtle: '#f1f5f9', // slate-100
-  surfaceMuted: '#e2e8f0', // slate-200
+  background: '#F6F8FA', // Accent light off-white
+  surface: '#FFFFFF',
+  surfaceCard: '#FFFFFF',
+  surfaceSubtle: '#F1F3F5',
+  surfaceMuted: '#E5E7EB',
 
   // Borders
-  border: '#e2e8f0', // slate-200
-  borderLight: '#f1f5f9', // slate-100
-  borderFocus: '#0056cf',
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+  borderFocus: '#EF5350',
 
   // Typography
-  textPrimary: '#0f172a', // slate-900
-  textSecondary: '#334155', // slate-700
-  textMuted: '#64748b', // slate-500
-  textLight: '#94a3b8', // slate-400
-  textInverse: '#ffffff',
+  textPrimary: '#1D1D1D',
+  textSecondary: '#363636',
+  textMuted: '#7C7F84',
+  textLight: '#9CA3AF',
+  textInverse: '#FFFFFF',
 
   // Status & Badges
-  success: '#10b981', // emerald-500
-  successBg: '#d1fae5',
-  warning: '#f59e0b', // amber-500
-  warningBg: '#fef3c7',
-  danger: '#ef4444', // rose-500
-  dangerBg: '#fee2e2',
-  info: '#0284c7', // sky-600
-  infoBg: '#e0f2fe',
+  success: '#10B981',
+  successBg: '#D1FAE5',
+  warning: '#F59E0B',
+  warningBg: '#FEF3C7',
+  danger: '#EF5350',
+  dangerBg: '#FEE2E2',
+  info: '#2563EB',
+  infoBg: '#DBEAFE',
 
   // Chat Bubble specifics
-  bubbleSent: '#0056cf',
-  bubbleSentText: '#ffffff',
-  bubbleSentTime: '#bfdbfe',
-  bubbleReceived: '#ffffff',
-  bubbleReceivedText: '#0f172a',
-  bubbleReceivedTime: '#94a3b8',
+  bubbleSent: '#EF5350',
+  bubbleSentText: '#FFFFFF',
+  bubbleSentTime: '#FECACA',
+  bubbleReceived: '#FFFFFF',
+  bubbleReceivedText: '#1D1D1D',
+  bubbleReceivedTime: '#7C7F84',
 
   // Overlay
-  backdrop: 'rgba(15, 23, 42, 0.65)',
+  backdrop: 'rgba(29, 29, 29, 0.65)',
 };

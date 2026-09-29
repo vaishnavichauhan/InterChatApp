@@ -6,6 +6,9 @@ import {
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  Platform,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { pick, types } from '@react-native-documents/picker';
@@ -21,6 +24,28 @@ interface AttachmentPickerModalProps {
   canUpload?: boolean;
 }
 
+const requestCameraPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') {
+    return true;
+  }
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      {
+        title: 'Camera Permission',
+        message: 'InterChat needs access to your camera to capture photos and videos.',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'Allow',
+      }
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  } catch (err) {
+    console.warn('Camera permission request error:', err);
+    return false;
+  }
+};
+
 export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
   visible,
   onClose,
@@ -30,24 +55,44 @@ export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
 }) => {
   const handleLaunchCamera = async () => {
     try {
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera permissions in your device settings to take photos or record videos.'
+        );
+        return;
+      }
+
       const result = await launchCamera({
         mediaType: 'mixed',
         quality: 0.8,
         saveToPhotos: false,
       });
 
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert('Camera Notice', result.errorMessage || result.errorCode);
+        return;
+      }
+
       if (result.assets && result.assets[0]?.uri) {
         const asset = result.assets[0];
         const uri = asset.uri!;
+        const isVideo = asset.type?.includes('video');
         onSelectFile({
           uri,
-          name: asset.fileName || `capture_${Date.now()}.jpg`,
-          type: asset.type || 'image/jpeg',
+          name: asset.fileName || `capture_${Date.now()}.${isVideo ? 'mp4' : 'jpg'}`,
+          type: asset.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
         });
         onClose();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Camera capture cancelled or failed', err);
+      Alert.alert('Error', err?.message || 'Unable to open camera.');
     }
   };
 
@@ -58,18 +103,29 @@ export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
         quality: 0.8,
       });
 
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert('Gallery Notice', result.errorMessage || result.errorCode);
+        return;
+      }
+
       if (result.assets && result.assets[0]?.uri) {
         const asset = result.assets[0];
         const uri = asset.uri!;
+        const isVideo = asset.type?.includes('video');
         onSelectFile({
           uri,
-          name: asset.fileName || `photo_${Date.now()}.jpg`,
-          type: asset.type || 'image/jpeg',
+          name: asset.fileName || `photo_${Date.now()}.${isVideo ? 'mp4' : 'jpg'}`,
+          type: asset.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
         });
         onClose();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Gallery pick cancelled or failed', err);
+      Alert.alert('Error', err?.message || 'Unable to open gallery.');
     }
   };
 
@@ -104,7 +160,7 @@ export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
           <TouchableWithoutFeedback>
             <View style={styles.sheet}>
               <View style={styles.header}>
-                <Text style={styles.title}>Share Media or File</Text>
+                <Text style={styles.title}>Select Media or File</Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                   <XMarkIcon size={20} color={colors.textMuted} />
                 </TouchableOpacity>

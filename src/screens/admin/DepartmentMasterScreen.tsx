@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppHeader } from '../../components/common/AppHeader';
 import { AppButton } from '../../components/common/AppButton';
 import { AppBadge } from '../../components/common/AppBadge';
@@ -46,6 +47,7 @@ interface DepartmentMasterScreenProps {
 export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
   navigation,
 }) => {
+  const insets = useSafeAreaInsets();
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -304,8 +306,8 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
           >
             <Defs>
               <LinearGradient id="createDeptBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor="#0056cf" />
-                <Stop offset="100%" stopColor="#4f46e5" />
+                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
               </LinearGradient>
             </Defs>
             <Rect x="0" y="0" width="100" height="100" fill="url(#createDeptBtnGrad)" />
@@ -313,7 +315,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
 
           <View style={styles.createDeptBtnInner}>
             <View style={styles.createDeptIconCircle}>
-              <PlusIcon size={12} color="#0056cf" />
+              <PlusIcon size={12} color={colors.buttonPrimary} />
             </View>
             <Text style={styles.createDeptBtnText}>Create Department</Text>
           </View>
@@ -396,7 +398,10 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
             />
           }
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(insets.bottom, 24) + 64 },
+          ]}
           renderItem={({ item }) => {
             const isActive = item.status === 'ACTIVE';
             const initials = getInitials(item.department_name);
@@ -457,7 +462,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
                     onPress={() => openMembersModal(item)}
                     activeOpacity={0.7}
                   >
-                    <UsersIcon size={14} color="#2563eb" />
+                    <UsersIcon size={14} color={colors.primary} />
                     <Text style={styles.metricChipTextBlue}>
                       {item.member_count || 0} Members
                     </Text>
@@ -487,7 +492,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
                     onPress={() => openMembersModal(item)}
                     activeOpacity={0.7}
                   >
-                    <UsersIcon size={14} color="#2563eb" />
+                    <UsersIcon size={14} color={colors.primary} />
                     <Text style={styles.actionBtnMembersText}>Members</Text>
                   </TouchableOpacity>
 
@@ -496,7 +501,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
                     onPress={() => openEditModal(item)}
                     activeOpacity={0.7}
                   >
-                    <EditIcon size={14} color="#4f46e5" />
+                    <EditIcon size={14} color={colors.primary} />
                     <Text style={styles.actionBtnEditText}>Edit</Text>
                   </TouchableOpacity>
 
@@ -533,7 +538,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={styles.modalHeaderIcon}>
-                  <BuildingIcon size={20} color="#2563eb" />
+                  <BuildingIcon size={20} color={colors.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>New Department</Text>
@@ -633,7 +638,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <View style={[styles.modalHeaderIcon, { backgroundColor: '#eef2ff' }]}>
-                  <EditIcon size={20} color="#4f46e5" />
+                  <EditIcon size={20} color={colors.primary} />
                 </View>
                 <View>
                   <Text style={styles.modalTitle}>Edit Department</Text>
@@ -732,8 +737,8 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
           <View style={[styles.membersModalContent, shadows.lg]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
-                <View style={[styles.modalHeaderIcon, { backgroundColor: '#eff6ff' }]}>
-                  <UsersIcon size={20} color="#2563eb" />
+                <View style={[styles.modalHeaderIcon, { backgroundColor: colors.primarySubtle }]}>
+                  <UsersIcon size={20} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.modalTitle} numberOfLines={1}>
@@ -817,7 +822,7 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
               />
             )}
 
-            <View style={styles.membersModalFooter}>
+            <View style={[styles.membersModalFooter, { paddingBottom: Math.max(insets.bottom, 12) }]}>
               <AppButton
                 title="Close"
                 variant="secondary"
@@ -892,7 +897,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   listContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 80,
   },
   centerLoading: {
     flex: 1,
@@ -939,7 +944,7 @@ const styles = StyleSheet.create({
   createDeptBtn: {
     borderRadius: borderRadius.md,
     overflow: 'hidden',
-    backgroundColor: '#0056cf',
+    backgroundColor: colors.buttonPrimary,
     flexShrink: 0,
     justifyContent: 'center',
   },
@@ -1165,18 +1170,18 @@ const styles = StyleSheet.create({
   metricChipBlue: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     paddingHorizontal: spacing.sm,
     paddingVertical: 5,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#dbeafe',
+    borderColor: colors.primaryMuted,
     gap: 4,
   },
   metricChipTextBlue: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#1d4ed8',
+    color: colors.primary,
   },
   metricChipPurple: {
     flexDirection: 'row',
@@ -1225,34 +1230,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primarySubtle,
     paddingVertical: 6,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: colors.primaryMuted,
     gap: 4,
   },
   actionBtnMembersText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#2563eb',
+    color: colors.primary,
   },
   actionBtnEdit: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eef2ff',
+    backgroundColor: colors.primarySubtle,
     paddingVertical: 6,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: colors.primaryMuted,
     gap: 4,
   },
   actionBtnEditText: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#4f46e5',
+    color: colors.primary,
   },
   actionBtnDelete: {
     flexDirection: 'row',

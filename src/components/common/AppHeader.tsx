@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
-import { MessagesSquareIcon, ArrowLeftIcon } from '../icons/SvgIcons';
+import { ArrowLeftIcon } from '../icons/SvgIcons';
 import { useAuthStore } from '../../store/authStore';
+import { EpoxyHouseBrandLogo } from './EpoxyHouseBrandLogo';
 
 interface AppHeaderProps {
   title?: string;
   subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
-  rightAction?: React.ReactNode;
+  showLogo?: boolean;
+  leftAction?: React.ReactNode;
+  rightAction?: React.ReactNode | boolean;
   showUserInfo?: boolean;
   onPressUser?: () => void;
 }
@@ -20,6 +23,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   subtitle,
   showBack = false,
   onBack,
+  showLogo = false,
+  leftAction,
   rightAction,
   showUserInfo,
   onPressUser,
@@ -29,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const topInset = Math.max(insets.top, androidStatusHeight);
 
   const user = useAuthStore((state) => state.user);
-  const displayUserInfo = showUserInfo ?? (!title && !showBack);
+  const displayUserInfo = showUserInfo ?? (!title && !showBack && !showLogo && !leftAction);
 
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin';
   const displayName = user?.name || user?.username || 'User';
@@ -48,7 +53,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       {displayUserInfo ? (
         <UserContainer {...(userContainerProps as any)} style={styles.userHeaderLeft}>
           <View style={styles.interchatIconBadge}>
-            <MessagesSquareIcon size={20} color="#ffffff" />
+            <Image
+              source={require('../../assets/epoxy-emblem.png')}
+              style={styles.headerEmblemImage}
+              resizeMode="contain"
+            />
           </View>
           <View style={styles.userInfoCol}>
             <Text style={styles.userNameText} numberOfLines={1}>
@@ -56,7 +65,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </Text>
             <View style={styles.userRoleRow}>
               <View style={[styles.roleBadge, isAdmin ? styles.roleBadgeAdmin : styles.roleBadgeUser]}>
-                {/* <View style={[styles.roleDot, isAdmin ? styles.roleDotAdmin : styles.roleDotUser]} /> */}
                 <Text style={[styles.roleBadgeText, isAdmin ? styles.roleBadgeTextAdmin : styles.roleBadgeTextUser]}>
                   {roleDisplay}
                 </Text>
@@ -65,28 +73,53 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </View>
         </UserContainer>
       ) : (
-        <View style={styles.leftContainer}>
-          {showBack ? (
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onBack}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowLeftIcon size={18} color={colors.textPrimary} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.logoBadge}>
-              <MessagesSquareIcon size={18} color="#ffffff" />
-            </View>
-          )}
+        <>
+          {/* Left Action: Back Button, Custom Left, Brand Logo, or Emblem */}
+          <View style={styles.leftActionArea}>
+            {showBack ? (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onBack}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <ArrowLeftIcon size={18} color={colors.textPrimary} />
+              </TouchableOpacity>
+            ) : leftAction ? (
+              leftAction
+            ) : showLogo ? (
+              <EpoxyHouseBrandLogo size="sm" variant="dark" />
+            ) : (
+              <View style={styles.logoBadge}>
+                <Image
+                  source={require('../../assets/epoxy-emblem.png')}
+                  style={styles.headerEmblemImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          </View>
 
-          <View style={styles.titleWrapper}>
-            {title ? (
+          {/* Centered Title Area */}
+          {title ? (
+            <View
+              style={[styles.titleCenterContainer, { top: topInset, height: 58 }]}
+              pointerEvents="box-none"
+            >
               <Text style={styles.customTitle} numberOfLines={1}>
                 {title}
               </Text>
-            ) : (
+              {subtitle ? (
+                <Text style={styles.subtitleText} numberOfLines={1}>
+                  {subtitle}
+                </Text>
+              ) : null}
+            </View>
+          ) : !showLogo && !leftAction ? (
+            <View
+              style={[styles.titleCenterContainer, { top: topInset, height: 58 }]}
+              pointerEvents="box-none"
+            >
               <View style={styles.brandRow}>
                 <Text style={styles.brandTitle}>
                   Inter<Text style={styles.brandAccent}>Chat</Text>
@@ -95,20 +128,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   <Text style={styles.enterpriseText}>ENTERPRISE</Text>
                 </View>
               </View>
-            )}
-
-            {subtitle ? (
-              <Text style={styles.subtitleText} numberOfLines={1}>
-                {subtitle}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+              {subtitle ? (
+                <Text style={styles.subtitleText} numberOfLines={1}>
+                  {subtitle}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+        </>
       )}
 
+      {/* Right Area */}
       <View style={styles.rightContainer}>
-        {rightAction ? (
+        {React.isValidElement(rightAction) ? (
           rightAction
+        ) : typeof rightAction === 'boolean' && rightAction ? (
+          <View style={styles.rightPlaceholder} />
         ) : (
           <View style={styles.statusPill}>
             <View style={styles.pulseDot} />
@@ -130,34 +165,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+    position: 'relative',
   },
-  leftContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+  leftActionArea: {
+    minWidth: 36,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    zIndex: 2,
   },
   backButton: {
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    borderWidth:1.5,
-    borderColor:colors.surfaceSubtle,
-    // backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1.5,
+    borderColor: colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
   },
   logoBadge: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
-  titleWrapper: {
-    flex: 1,
+  titleCenterContainer: {
+    position: 'absolute',
+    left: 56,
+    right: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   brandRow: {
     flexDirection: 'row',
@@ -192,16 +233,24 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.lg,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
-    textAlign:'center'
+    textAlign: 'center',
   },
   subtitleText: {
     fontSize: fontSizes.tiny,
     color: colors.textMuted,
     marginTop: 1,
+    textAlign: 'center',
   },
   rightContainer: {
+    minWidth: 36,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 2,
+  },
+  rightPlaceholder: {
+    width: 36,
+    height: 36,
   },
   statusPill: {
     flexDirection: 'row',
@@ -232,19 +281,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: spacing.sm,
   },
+  headerEmblemImage: {
+    width: 24,
+    height: 24,
+  },
   interchatIconBadge: {
     width: 36,
     height: 36,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm + 2,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   userInfoCol: {
     justifyContent: 'center',
@@ -271,9 +326,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   roleBadgeAdmin: {
-    borderBottomColor: '#bfdbfe',
+    backgroundColor: '#fef2f2',
+    borderBottomColor: '#fca5a5',
   },
   roleBadgeUser: {
+    backgroundColor: '#f0fdf4',
     borderBottomColor: '#bbf7d0',
   },
   roleDot: {
@@ -282,7 +339,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   roleDotAdmin: {
-    backgroundColor: '#0056cf',
+    backgroundColor: colors.primary,
   },
   roleDotUser: {
     backgroundColor: '#16a34a',
@@ -293,7 +350,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   roleBadgeTextAdmin: {
-    color: '#0056cf',
+    color: colors.primary,
   },
   roleBadgeTextUser: {
     color: '#16a34a',

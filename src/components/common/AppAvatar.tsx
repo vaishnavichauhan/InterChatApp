@@ -30,7 +30,7 @@ export const AppAvatar: React.FC<AppAvatarProps> = ({
   } else if (isBroadcast) {
     bgColor = '#7c3aed';
   } else if (isGroup) {
-    bgColor = '#4f46e5';
+    bgColor = colors.primaryDark;
   }
 
   const initials = getInitials(name);

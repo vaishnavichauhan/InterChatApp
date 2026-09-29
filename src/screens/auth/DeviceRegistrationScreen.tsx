@@ -116,9 +116,8 @@ export const DeviceRegistrationScreen: React.FC<DeviceRegistrationScreenProps> =
               <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
                 <Defs>
                   <LinearGradient id="regBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <Stop offset="0%" stopColor="#4f46e5" />
-                    <Stop offset="50%" stopColor="#2563eb" />
-                    <Stop offset="100%" stopColor="#06b6d4" />
+                    <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                    <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
                   </LinearGradient>
                 </Defs>
                 <Rect width="100%" height="100%" rx={28} fill="url(#regBtnGrad)" />
@@ -130,7 +129,7 @@ export const DeviceRegistrationScreen: React.FC<DeviceRegistrationScreenProps> =
                 <View style={styles.buttonInnerContent}>
                   <Text style={styles.submitButtonText}>Submit for Admin Approval</Text>
                   <View style={styles.arrowCircle}>
-                    <ArrowRightIcon size={16} color="#2563eb" />
+                    <ArrowRightIcon size={16} color={colors.buttonPrimary} />
                   </View>
                 </View>
               )}

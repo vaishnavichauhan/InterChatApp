@@ -6,8 +6,8 @@ export type AuthStackParamList = {
 };
 
 export type MainTabParamList = {
+  DashboardTab?: undefined;
   ChatTab: undefined;
-  DashboardTab: undefined;
   ProfileTab: undefined;
 };
 
