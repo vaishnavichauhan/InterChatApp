@@ -163,7 +163,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
         data={permissions.canChat ? filteredConversations : []}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => {
-          const isOnline = item.partnerId ? onlineUserIds.includes(String(item.partnerId)) : false;
+          const pId = (item as any).partnerId || (item as any).other_user_id || (item as any).partner_id;
+          const isGroup = (item.type || '').toLowerCase() === 'group';
+          const isOnline = !isGroup && pId ? onlineUserIds.some((id) => String(id) === String(pId)) : false;
           return (
             <ConversationItem
               conversation={item}

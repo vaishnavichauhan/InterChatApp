@@ -20,11 +20,13 @@ export const getSocket = (userId?: number | string | null): Socket => {
   currentSocketUserId = userId || null;
 
   socketInstance = io(SOCKET_URL, {
-    transports: ['websocket', 'polling'],
+    transports: ['polling', 'websocket'],
+    upgrade: true,
     reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000,
-    timeout: 10000,
+    reconnectionAttempts: 20,
+    reconnectionDelay: 1500,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
     query: userId ? { userId: String(userId) } : undefined,
     auth: userId ? { userId: String(userId) } : undefined,
   });
@@ -32,8 +34,9 @@ export const getSocket = (userId?: number | string | null): Socket => {
   socketInstance.on('connect', () => {
     console.log('⚡ Connected to InterChat Socket server:', socketInstance?.id);
     if (userId) {
-      socketInstance?.emit('user:online', userId);
+      socketInstance?.emit('user:online', String(userId));
     }
+    socketInstance?.emit('users:get_online');
   });
 
   socketInstance.on('disconnect', (reason) => {
@@ -49,6 +52,11 @@ export const getSocket = (userId?: number | string | null): Socket => {
 
 export const disconnectSocket = () => {
   if (socketInstance) {
+    if (currentSocketUserId) {
+      try {
+        socketInstance.emit('user:offline', String(currentSocketUserId));
+      } catch (_) {}
+    }
     socketInstance.disconnect();
     socketInstance = null;
     currentSocketUserId = null;

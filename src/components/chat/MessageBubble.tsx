@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Alert, Platform } from 'react-native';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { formatMessageTime, formatFileSize, getFileCategory } from '../../utils/formatters';
-import { FileIcon, CameraIcon, DownloadIcon, LockIcon, EyeIcon } from '../icons/SvgIcons';
+import { FileIcon, CameraIcon, DownloadIcon, LockIcon, EyeIcon, TrashIcon, ReplyIcon, BanIcon } from '../icons/SvgIcons';
 import { ChatMessage } from '../../store/chatStore';
 import { resolveFileUrl } from '../../config/api';
-import { useAuthStore, isDeviceDownloadAllowed } from '../../store/authStore';
+import { useAuthStore, isDeviceDownloadAllowed, isUserAdminRole } from '../../store/authStore';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -13,6 +13,7 @@ interface MessageBubbleProps {
   showSenderName?: boolean;
   onViewFile?: (file: any) => void;
   onReply?: (message: ChatMessage) => void;
+  onDelete?: (message: ChatMessage) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -21,11 +22,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   showSenderName = false,
   onViewFile,
   onReply,
+  onDelete,
 }) => {
   const token = useAuthStore((state) => state.token);
   const permissions = useAuthStore((state) => state.permissions);
   const user = useAuthStore((state) => state.user);
   const [imageError, setImageError] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isAdmin = isUserAdminRole(user);
+  const canDelete = Boolean(user);
 
   const canDownload = Boolean(permissions.canDownload && isDeviceDownloadAllowed(user));
   const canView = permissions.canView !== false;
@@ -94,21 +100,68 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const isRestricted = Boolean(message.is_attachment_restricted);
+  const isDeleted = message.message_text === 'This message was deleted' || (message as any).is_deleted;
+
+  const renderActions = () => {
+    if (!isHovered || isDeleted) return null;
+    return (
+      <View style={[styles.actionsContainer, isSelf ? styles.actionsContainerSelf : styles.actionsContainerOther]}>
+        {onReply && (
+          <TouchableOpacity style={styles.actionBtn} onPress={() => { setIsHovered(false); onReply(message); }}>
+            <ReplyIcon size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+        {canDelete && onDelete && (
+          <TouchableOpacity style={styles.actionBtn} onPress={() => { setIsHovered(false); onDelete(message); }}>
+            <TrashIcon size={16} color={colors.danger} />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onLongPress={() => onReply && onReply(message)}
+    <View
+      {...Platform.select({
+        web: {
+          onMouseEnter: () => setIsHovered(true),
+          onMouseLeave: () => setIsHovered(false),
+        } as any
+      })}
       style={[styles.container, isSelf ? styles.containerSelf : styles.containerOther]}
     >
-      <View
-        style={[
-          styles.bubble,
-          isSelf ? styles.bubbleSelf : styles.bubbleOther,
-          (Boolean(attachment) || isRestricted) && styles.bubbleWithAttachment,
-        ]}
+      {!isSelf && renderActions()}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={[styles.touchableBubble, isSelf ? styles.touchableBubbleSelf : styles.touchableBubbleOther]}
+        onLongPress={() => {
+           setIsHovered(!isHovered);
+           onReply && onReply(message);
+        }}
+        onPress={() => Platform.OS !== 'web' && setIsHovered(!isHovered)}
       >
-        {/* Sender Name in group chats for others */}
+        {isDeleted ? (
+          <View style={styles.bubbleDeleted}>
+            <View style={styles.deletedContainer}>
+              <BanIcon size={14} color={colors.textMuted} />
+              <Text style={styles.deletedText}>This message was deleted</Text>
+            </View>
+            <View style={styles.timeRow}>
+              <Text style={[styles.timeText, { color: colors.textMuted }]}>
+                {formatMessageTime(message.created_at)}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.bubble,
+              isSelf ? styles.bubbleSelf : styles.bubbleOther,
+              (Boolean(attachment) || isRestricted) && styles.bubbleWithAttachment,
+              Boolean(message.parent_message_text || message.parent_message_id) && styles.bubbleWithReply,
+            ]}
+          >
+            {/* Sender Name in group chats for others */}
         {!isSelf && showSenderName && (
           <Text style={[styles.senderName, Boolean(attachment) && styles.senderNameWithAttachment]}>
             {message.sender_name || message.sender_username || 'Colleague'}
@@ -116,7 +169,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Reply Quote Banner */}
-        {message.parent_message_text && (
+        {(message.parent_message_text || message.parent_message_id) && (
           <View
             style={[
               styles.replyQuote,
@@ -125,10 +178,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             ]}
           >
             <Text style={[styles.replySender, isSelf && styles.replySenderSelf]} numberOfLines={1}>
-              {message.parent_sender_name || 'Replying to message'}
+              {message.parent_sender_name ? `Replying to ${message.parent_sender_name}` : 'Replying:'}
             </Text>
             <Text style={[styles.replyText, isSelf && styles.replyTextSelf]} numberOfLines={2}>
-              {message.parent_message_text}
+              {message.parent_message_text || 'Original message'}
             </Text>
           </View>
         )}
@@ -258,46 +311,97 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               {message.message_text}
             </Text>
             {/* If there is caption text, show its timestamp below the caption */}
-            <Text
-              style={[
-                styles.timeText,
-                isSelf && !attachment ? styles.timeTextSelf : styles.timeTextOther,
-                Boolean(attachment) && styles.timeTextWithAttachment,
-              ]}
-            >
+            <View style={[styles.timeRow, Boolean(attachment) && styles.timeRowWithAttachment]}>
+              <Text
+                style={[
+                  styles.timeText,
+                  isSelf && !attachment ? styles.timeTextSelf : styles.timeTextOther,
+                  Boolean(attachment) && styles.timeTextWithAttachment,
+                ]}
+              >
+                {formatMessageTime(message.created_at)}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Timestamp for text-only messages (when no attachment and no text) */}
+        {!attachment && !isRestricted && !message.message_text && (
+          <View style={styles.timeRow}>
+            <Text style={[styles.timeText, isSelf ? styles.timeTextSelf : styles.timeTextOther]}>
               {formatMessageTime(message.created_at)}
             </Text>
           </View>
         )}
-
-        {/* Timestamp for text-only messages (when no attachment and no caption) */}
-        {!attachment && !isRestricted && !message.message_text && (
-          <Text style={[styles.timeText, isSelf ? styles.timeTextSelf : styles.timeTextOther]}>
-            {formatMessageTime(message.created_at)}
-          </Text>
+          </View>
         )}
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      {isSelf && renderActions()}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginVertical: 3,
     paddingHorizontal: spacing.md,
     flexDirection: 'row',
   },
   containerSelf: {
     justifyContent: 'flex-end',
+    alignItems: 'flex-end',
   },
   containerOther: {
     justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  touchableBubble: {
+    maxWidth: '84%',
+  },
+  touchableBubbleSelf: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  touchableBubbleOther: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginHorizontal: 8,
+    gap: 8,
+  },
+  actionsContainerSelf: {
+    marginRight: 0,
+  },
+  actionsContainerOther: {
+    marginLeft: 0,
+  },
+  actionBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
   bubble: {
-    maxWidth: '82%',
+    minWidth: 125,
+    maxWidth: '100%',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: 7,
     borderRadius: borderRadius.lg,
+  },
+  bubbleWithReply: {
+    minWidth: 200,
   },
   bubbleWithAttachment: {
     padding: 0,
@@ -315,6 +419,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderLight,
     borderBottomLeftRadius: 4,
+  },
+  bubbleDeleted: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#94a3b8',
+    borderStyle: 'dashed',
+    borderRadius: borderRadius.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: 7,
+    paddingHorizontal: spacing.md,
+    minWidth: 160,
+  },
+  deletedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  deletedText: {
+    fontSize: fontSizes.sm,
+    fontStyle: 'italic',
+    color: colors.textMuted,
   },
   senderName: {
     fontSize: fontSizes.tiny,
@@ -535,8 +660,9 @@ const styles = StyleSheet.create({
   /* ── Message Text & Timestamp ── */
   messageText: {
     fontSize: fontSizes.base,
-    lineHeight: 20,
+    lineHeight: 21,
     fontWeight: fontWeights.regular,
+    includeFontPadding: false,
   },
   messageTextWithAttachment: {
     paddingHorizontal: 8,
@@ -549,17 +675,24 @@ const styles = StyleSheet.create({
   messageTextOther: {
     color: colors.bubbleReceivedText,
   },
-  timeText: {
-    fontSize: 10,
-    fontWeight: fontWeights.medium,
-    alignSelf: 'flex-end',
-    marginTop: 3,
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 4,
   },
-  timeTextWithAttachment: {
+  timeRowWithAttachment: {
     paddingHorizontal: 6,
     marginTop: 2,
-    marginBottom: 1,
+    marginBottom: 2,
   },
+  timeText: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    fontWeight: fontWeights.medium,
+    includeFontPadding: false,
+  },
+  timeTextWithAttachment: {},
   timeTextSelf: {
     color: colors.bubbleSentTime,
   },

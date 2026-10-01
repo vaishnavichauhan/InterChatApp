@@ -1,8 +1,10 @@
+import { AppState, AppStateStatus } from 'react-native';
 import { create } from 'zustand';
 import {
   getConversations,
   getConversationMessages,
   sendChatMessage,
+  getOnlineUsers,
   SendMessagePayload,
 } from '../api/chatApi';
 import { getSocket } from '../utils/socket';
@@ -92,11 +94,22 @@ interface ChatState {
   leaveActiveConversation: () => void;
   loadMessages: (conversationId: number) => Promise<void>;
   sendMessage: (payload: Omit<SendMessagePayload, 'conversationId'>) => Promise<boolean>;
+  fetchOnlineUsers: () => Promise<void>;
   setupSocketListeners: () => void;
   cleanupSocketListeners: () => void;
   emitTypingStart: () => void;
   emitTypingStop: () => void;
 }
+
+/** Return a user-friendly snippet label for an attachment based on mime type or file name */
+const getAttachmentLabel = (mimeType?: string, fileName?: string): string => {
+  const mime = (mimeType || '').toLowerCase();
+  const name = (fileName || '').toLowerCase();
+  if (mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(name)) return '📷 Image';
+  if (mime.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/.test(name)) return '🎥 Video';
+  if (mime.startsWith('audio/') || /\.(mp3|wav|ogg|aac|m4a)$/.test(name)) return '🎵 Audio';
+  return '📄 Document';
+};
 
 const sortConversations = (list: Conversation[]): Conversation[] => {
   return [...list].sort((a, b) => {
@@ -117,6 +130,9 @@ const sortConversations = (list: Conversation[]): Conversation[] => {
   });
 };
 
+let presenceInterval: any = null;
+let appStateSubscription: any = null;
+
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   activeConversation: null,
@@ -126,12 +142,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
   onlineUserIds: [],
   typingUsers: [],
 
+  fetchOnlineUsers: async () => {
+    try {
+      const res = await getOnlineUsers();
+      if (res?.onlineUserIds && Array.isArray(res.onlineUserIds)) {
+        set({ onlineUserIds: res.onlineUserIds.map((id: any) => String(id)) });
+      }
+    } catch (_) {}
+  },
+
   loadConversations: async (selectFirstIfEmpty = false) => {
     try {
+      // Refresh online users in background whenever conversations load
+      get().fetchOnlineUsers();
       set({ isLoadingConversations: true });
       const res = await getConversations();
       const list = res?.conversations || res?.data || (Array.isArray(res) ? res : []);
-      const validList: Conversation[] = Array.isArray(list) ? list : [];
+      const rawList: Conversation[] = Array.isArray(list) ? list : [];
+      const validList = rawList.map((c: any) => {
+        // If last_message is empty but last_message_at exists, the last message was an attachment
+        let lastMsg = c.last_message || c.last_message_text || '';
+        if (!lastMsg && c.last_message_at) {
+          lastMsg = '📎 Attachment';
+        }
+        return {
+          ...c,
+          partnerId: c.partnerId || c.other_user_id || c.partner_id || null,
+          last_message: lastMsg,
+        };
+      });
       const sorted = sortConversations(validList);
 
       set({
@@ -188,8 +227,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const list = res?.messages || res?.data || (Array.isArray(res) ? res : []);
       const validMessages = Array.isArray(list) ? list : [];
 
+      const augmentedMessages = validMessages.map((msg: any) => {
+        const pId = msg.parent_message_id || msg.parentMessageId;
+        const pText = msg.reply_to_text || msg.parent_message_text;
+        if (pId && !pText) {
+          const parent = validMessages.find((m: any) => Number(m.id) === Number(pId));
+          if (parent) {
+            return {
+              ...msg,
+              parent_message_id: pId,
+              parent_message_text: parent.message_text || (parent.original_name ? `📎 ${parent.original_name}` : ''),
+              parent_sender_name: parent.sender_name || parent.sender_username,
+            };
+          }
+        }
+        return {
+          ...msg,
+          parent_message_id: pId || null,
+          parent_message_text: pText || null,
+        };
+      });
+
       set({
-        messages: validMessages,
+        messages: augmentedMessages,
         isLoadingMessages: false,
       });
     } catch (err) {
@@ -212,6 +272,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const rawMsg = res?.data || res?.message || res;
       if (rawMsg && (rawMsg.id || rawMsg.content || rawMsg.message_text)) {
+        const parentMsg = partialPayload.parentMessageId 
+          ? get().messages.find(m => m.id === partialPayload.parentMessageId) 
+          : null;
+        
         const normalized: ChatMessage = {
           ...rawMsg,
           id: rawMsg.id || Date.now(),
@@ -222,6 +286,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           message_text: rawMsg.message_text || rawMsg.content || partialPayload.messageText || '',
           created_at: rawMsg.created_at || new Date().toISOString(),
           attachments: rawMsg.attachments || [],
+          parent_message_id: rawMsg.parent_message_id || partialPayload.parentMessageId || null,
+          parent_message_text: rawMsg.reply_to_text || rawMsg.parent_message_text || parentMsg?.message_text || null,
+          parent_sender_name: rawMsg.parent_sender_name || parentMsg?.sender_name || parentMsg?.sender_username || null,
         };
 
         set((state) => {
@@ -234,7 +301,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ...c,
                 last_message:
                   normalized.message_text ||
-                  (normalized.original_name ? `📎 ${normalized.original_name}` : 'Message'),
+                  (normalized.original_name
+                    ? getAttachmentLabel(
+                        normalized.attachments?.[0]?.mime_type,
+                        normalized.original_name
+                      )
+                    : 'Message'),
                 last_message_at: normalized.created_at,
               };
             }
@@ -288,11 +360,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const socket = getSocket(user?.id);
 
+    // Initial fetch of online users via HTTP
+    get().fetchOnlineUsers();
+
     const handleConnect = () => {
       const u = useAuthStore.getState().user;
       if (u?.id) {
-        socket.emit('user:online', u.id);
+        socket.emit('user:online', String(u.id));
       }
+      // Request current online list immediately after connecting
+      socket.emit('users:get_online');
+      get().fetchOnlineUsers();
       const act = get().activeConversation;
       if (act?.id) {
         socket.emit('conversation:join', act.id);
@@ -303,12 +381,50 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket.on('connect', handleConnect);
 
     if (user?.id) {
-      socket.emit('user:online', user.id);
+      socket.emit('user:online', String(user.id));
     }
+    // Request current online list on setup
+    socket.emit('users:get_online');
+
+    // Periodic presence ping every 5 seconds (matching web frontend ChatApp.jsx)
+    if (presenceInterval) {
+      clearInterval(presenceInterval);
+    }
+    presenceInterval = setInterval(async () => {
+      const u = useAuthStore.getState().user;
+      const sock = getSocket(u?.id);
+      if (u?.id && sock.connected) {
+        sock.emit('user:online', String(u.id));
+      }
+      if (sock.connected) {
+        sock.emit('users:get_online');
+      }
+      await get().fetchOnlineUsers();
+    }, 5000);
+
+    // Sync presence when app returns to foreground
+    if (appStateSubscription) {
+      appStateSubscription.remove();
+    }
+    appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        const u = useAuthStore.getState().user;
+        const sock = getSocket(u?.id);
+        if (u?.id && sock.connected) {
+          sock.emit('user:online', String(u.id));
+        }
+        if (sock.connected) {
+          sock.emit('users:get_online');
+        }
+        get().fetchOnlineUsers();
+        get().loadConversations(false);
+      }
+    });
 
     socket.off('users:online');
     socket.on('users:online', (ids: string[]) => {
-      set({ onlineUserIds: ids || [] });
+      // Normalize all IDs to strings to avoid type mismatch
+      set({ onlineUserIds: (ids || []).map((id) => String(id)) });
     });
 
     socket.off('message:new');
@@ -353,6 +469,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }]
         : [];
 
+      let pText = newMsg.reply_to_text || newMsg.parent_message_text;
+      let pSender = newMsg.parent_sender_name;
+      const pId = newMsg.parent_message_id || newMsg.parentMessageId;
+      if (pId && !pText) {
+        const pMsg = get().messages.find((m) => Number(m.id) === Number(pId));
+        if (pMsg) {
+          pText = pMsg.message_text || (pMsg.original_name ? `📎 ${pMsg.original_name}` : '');
+          pSender = pMsg.sender_name || pMsg.sender_username;
+        }
+      }
+
       const normalizedMsg: ChatMessage = {
         ...newMsg,
         id: Number(newMsg.id),
@@ -366,6 +493,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         mime_type: attMime || (normalizedAttachments[0]?.mime_type) || null,
         file_type: attMime || (normalizedAttachments[0]?.mime_type) || null,
         file_size: attSize || (normalizedAttachments[0]?.file_size) || null,
+        parent_message_id: pId || null,
+        parent_message_text: pText,
+        parent_sender_name: pSender,
       };
 
       // If this message belongs to the open chat, append or update it immediately
@@ -398,6 +528,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
 
         const snippetName = attName || normalizedMsg.original_name || newMsg.original_name || newMsg.file_name;
+        const snippetMime = normalizedMsg.attachments?.[0]?.mime_type || newMsg.mime_type || newMsg.file_type || '';
         const updated = state.conversations.map((c) => {
           if (Number(c.id) === msgConvId) {
             const isCurrentChat = active && Number(active.id) === Number(c.id);
@@ -405,7 +536,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ...c,
               last_message:
                 normalizedMsg.message_text ||
-                (snippetName ? `📎 ${snippetName}` : 'Document'),
+                (snippetName ? getAttachmentLabel(snippetMime, snippetName) : 'Message'),
               last_message_at: normalizedMsg.created_at || new Date().toISOString(),
               unread_count: isCurrentChat ? 0 : (c.unread_count || 0) + 1,
             };
@@ -442,6 +573,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
     });
 
+    socket.off('message:deleted');
+    socket.on('message:deleted', ({ messageId }: { messageId: number; conversationId?: number }) => {
+      set((state) => ({
+        messages: state.messages.filter((m) => Number(m.id) !== Number(messageId)),
+      }));
+    });
+
     socket.off('typing:start');
     socket.on('typing:start', ({ conversationId, userId, userName }: TypingUser) => {
       const currentUserId = useAuthStore.getState().user?.id;
@@ -466,9 +604,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   cleanupSocketListeners: () => {
+    if (presenceInterval) {
+      clearInterval(presenceInterval);
+      presenceInterval = null;
+    }
+    if (appStateSubscription) {
+      appStateSubscription.remove();
+      appStateSubscription = null;
+    }
     const socket = getSocket();
     socket.off('users:online');
     socket.off('message:new');
+    socket.off('message:deleted');
     socket.off('conversation:new');
     socket.off('conversation:updated');
     socket.off('conversation:deleted');

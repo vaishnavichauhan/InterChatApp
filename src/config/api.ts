@@ -16,9 +16,9 @@
 // export const SOCKET_URL = BASE_SERVER_URL;
 
 // ── Live Production URL ───────────────────────────────────────────────────
-export const HOST = 'interchat.jeenweb.com';
-export const BASE_SERVER_URL = `http://${HOST}`;
-export const API_BASE_URL = `${BASE_SERVER_URL}/api`; // http://interchat.jeenweb.com/api
+export const HOST = 'interchat.epoxyhouse.in';
+export const BASE_SERVER_URL = `https://${HOST}`;
+export const API_BASE_URL = `${BASE_SERVER_URL}/api`; // https://interchat.epoxyhouse.in/api
 export const SOCKET_URL = BASE_SERVER_URL;
 
 export const resolveFileUrl = (url?: string | null): string => {

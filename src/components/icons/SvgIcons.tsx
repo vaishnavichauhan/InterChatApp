@@ -63,6 +63,13 @@ export const ArrowLeftIcon: React.FC<IconProps> = ({ size = 20, color = '#0f172a
   </Svg>
 );
 
+export const ReplyIcon: React.FC<IconProps> = ({ size = 18, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="9 17 4 12 9 7" />
+    <Path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+  </Svg>
+);
+
 export const SearchIcon: React.FC<IconProps> = ({ size = 18, color = '#94a3b8' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Circle cx={11} cy={11} r={8} />

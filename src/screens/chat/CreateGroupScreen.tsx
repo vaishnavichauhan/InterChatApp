@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
@@ -223,7 +224,10 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {/* Top App Header */}
       <AppHeader
         title="Create Team Group"
@@ -244,11 +248,13 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
 
       {/* Main Form Scroll View with proper bottom clearance */}
       <ScrollView
+        style={styles.scrollArea}
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingBottom: Math.max(insets.bottom, 24) + 85 },
+          { paddingBottom: Math.max(insets.bottom, 24) + 30 },
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         {/* GROUP NAME */}
@@ -514,43 +520,38 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
             </View>
           </View>
         )}
+
+        {/* Action Buttons (Submit & Cancel) inside ScrollView so they never hide inputs or get covered by keyboard */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              (submitting || (!isAnnouncement && selectedMembers.length === 0)) && styles.submitButtonDisabled,
+            ]}
+            onPress={handleCreate}
+            disabled={submitting || (!isAnnouncement && selectedMembers.length === 0)}
+            activeOpacity={0.85}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {isAnnouncement
+                  ? 'Create Announcement Hub'
+                  : `Create Group (${selectedMembers.length})`}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-
-      {/* Floating / Sticky Bottom Actions Bar (Guarantees zero overlap with list items) */}
-      <View
-        style={[
-          styles.bottomActionsBar,
-          { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 10) },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (submitting || (!isAnnouncement && selectedMembers.length === 0)) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleCreate}
-          disabled={submitting || (!isAnnouncement && selectedMembers.length === 0)}
-          activeOpacity={0.85}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {isAnnouncement
-                ? 'Create Announcement Hub'
-                : `Create Group (${selectedMembers.length})`}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
 
       {/* Department Picker Bottom Sheet / Modal */}
       <Modal
@@ -618,7 +619,7 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -930,30 +931,25 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center',
   },
-  bottomActionsBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderColor: '#e2e8f0',
+  scrollArea: {
+    flex: 1,
+  },
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm + 2,
-    gap: spacing.sm,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 6,
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    paddingBottom: spacing.sm,
   },
   cancelButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    flex: 1,
+    paddingVertical: spacing.sm + 4,
     borderRadius: borderRadius.md,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   cancelButtonText: {
     fontSize: fontSizes.sm,
@@ -961,13 +957,13 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   submitButton: {
+    flex: 2,
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.md + 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 140,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,

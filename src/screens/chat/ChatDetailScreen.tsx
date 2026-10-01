@@ -22,8 +22,8 @@ import { ChatInputBar } from '../../components/chat/ChatInputBar';
 import { AttachmentPickerModal } from '../../components/chat/AttachmentPickerModal';
 import { TypingIndicator } from '../../components/chat/TypingIndicator';
 import { useChatStore, ChatMessage } from '../../store/chatStore';
-import { useAuthStore } from '../../store/authStore';
-import { uploadChatAttachment, deleteGroupChat, FileUploadAsset } from '../../api/chatApi';
+import { useAuthStore, isUserAdminRole } from '../../store/authStore';
+import { uploadChatAttachment, deleteGroupChat, deleteMessage, FileUploadAsset } from '../../api/chatApi';
 import { getSocket } from '../../utils/socket';
 
 interface ChatDetailScreenProps {
@@ -38,6 +38,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const permissions = useAuthStore((state) => state.permissions);
+  const isAdmin = isUserAdminRole(user);
 
   const {
     activeConversation,
@@ -150,7 +151,21 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
   const isActivity = Boolean(activeConversation.is_activity) || activeConversation.title === '#activity';
   const isMaster = Boolean(activeConversation.is_master) && !isActivity;
   const isAnnouncement = Boolean(activeConversation.is_announcement);
-  const isOnline = activeConversation.partnerId ? onlineUserIds.includes(String(activeConversation.partnerId)) : false;
+  const matchedConv = conversations.find((c) => Number(c.id) === Number(activeConversation.id));
+  const messagePartnerId = messages.find(
+    (m) => m.sender_id && Number(m.sender_id) !== Number(user?.id)
+  )?.sender_id;
+
+  const pId =
+    (activeConversation as any).partnerId ||
+    (activeConversation as any).other_user_id ||
+    (activeConversation as any).partner_id ||
+    (matchedConv as any)?.partnerId ||
+    (matchedConv as any)?.other_user_id ||
+    (matchedConv as any)?.partner_id ||
+    messagePartnerId;
+
+  const isOnline = !isGroup && pId ? onlineUserIds.some((id) => String(id) === String(pId)) : false;
 
   const isGroupAdmin =
     user?.role === 'admin' ||
@@ -218,6 +233,74 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
         },
       ]
     );
+  };
+
+  const handleDeleteMessage = (msg: ChatMessage) => {
+    const isSelf = Number(msg.sender_id) === Number(user?.id);
+    const canDeleteForEveryone = isAdmin || isSelf;
+
+    if (canDeleteForEveryone) {
+      // Admin (for both sender & receiver sides) OR sender: Can choose between 'Delete for me' and 'Delete for everyone'
+      const options: any[] = [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete for me',
+          onPress: async () => {
+            try {
+              await deleteMessage(msg.id, 'FOR_ME');
+              useChatStore.setState((state) => ({
+                messages: state.messages.filter((m) => m.id !== msg.id),
+              }));
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Failed to delete message.');
+            }
+          },
+        },
+        {
+          text: 'Delete for everyone',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMessage(msg.id, 'FOR_EVERYONE');
+              useChatStore.setState((state) => ({
+                messages: state.messages.filter((m) => m.id !== msg.id),
+              }));
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Failed to delete message.');
+            }
+          },
+        },
+      ];
+
+      Alert.alert(
+        'Delete Message',
+        'Who do you want to delete this message for?',
+        options
+      );
+    } else {
+      // Receiver side for regular user: Only show 'Delete for me'
+      Alert.alert(
+        'Delete Message',
+        'Are you sure you want to delete this message for yourself?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete for me',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteMessage(msg.id, 'FOR_ME');
+                useChatStore.setState((state) => ({
+                  messages: state.messages.filter((m) => m.id !== msg.id),
+                }));
+              } catch (err: any) {
+                Alert.alert('Error', err.response?.data?.message || 'Failed to delete message.');
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   const handleViewFile = (file: any) => {
@@ -308,6 +391,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
                 showSenderName={isGroup && !isSelf}
                 onViewFile={handleViewFile}
                 onReply={(msg) => setReplyingTo(msg)}
+                onDelete={handleDeleteMessage}
               />
             );
           }}

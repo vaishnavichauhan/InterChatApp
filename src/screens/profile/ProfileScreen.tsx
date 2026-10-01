@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
   StatusBar,
   useWindowDimensions,
   RefreshControl,
+  KeyboardAvoidingView,
+  Keyboard,
+  type ScrollViewInstance,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
@@ -46,6 +49,7 @@ export const ProfileScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const { user, logout, updateUser } = useAuthStore();
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -157,6 +161,7 @@ export const ProfileScreen: React.FC = () => {
   ];
 
   const handleCancelEdit = () => {
+    Keyboard.dismiss();
     setName(user?.name || '');
     setEmail(user?.email || '');
     setMobNo(user?.mob_no || '');
@@ -169,6 +174,7 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
+    Keyboard.dismiss();
     try {
       setSaving(true);
       const res = await updateProfile({
@@ -201,77 +207,83 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <StatusBar barStyle="light-content" />
 
-      {/* ── TOP PART: S-Curve Wave Hero Banner (Full width edge-to-edge, above ScrollView) ── */}
-      <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
-        <Svg
-          width={width}
-          height={bannerHeight + 30}
-          viewBox={`0 0 ${width} ${bannerHeight + 30}`}
-          style={StyleSheet.absoluteFill}
-        >
-          <Defs>
-            <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor={colors.heroGradientStart} />
-              <Stop offset="50%" stopColor={colors.heroGradientMid} />
-              <Stop offset="100%" stopColor={colors.heroGradientEnd} />
-            </LinearGradient>
-            <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
-              <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
-            </LinearGradient>
-          </Defs>
-          {/* Depth back-wave */}
-          <Path d={backWavePath} fill="url(#dashBackWave)" />
-          {/* Main foreground wave */}
-          <Path d={mainWavePath} fill="url(#dashBgGrad)" />
-        </Svg>
-
-        {/* Banner content */}
-        <View style={[styles.bannerContent, { paddingTop: topInset + 6 }]}>
-          {/* Center Avatar (Enlarged) */}
-          <View style={styles.bannerAvatarBox}>
-            <Text style={styles.bannerAvatarText}>{initials}</Text>
-            <View style={styles.bannerAvatarDot} />
-          </View>
-
-          {/* Greeting heading */}
-          <Text style={styles.bannerHeading}>
-            Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
-          </Text>
-
-          {/* Role Badge */}
-          <View style={styles.bannerRoleBadge}>
-            <Text style={styles.bannerRoleText}>
-              {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ── SCROLLVIEW FOR CONTENT AFTER TOP PART ── */}
+      {/* ── SCROLLVIEW FOR CONTENT AND TOP HERO BANNER ── */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollArea}
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingBottom: Math.max(insets.bottom, 24) + spacing.xl },
+          { paddingBottom: Math.max(insets.bottom, 24) + (isEditing ? 280 : spacing.xl) },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={
-          <RefreshControl
-            refreshing={loadingStats}
-            onRefresh={() => {
-              if (isAdmin) fetchStats();
-            }}
-            tintColor={colors.primary}
-          />
+          !isEditing && isAdmin ? (
+            <RefreshControl
+              refreshing={loadingStats}
+              onRefresh={fetchStats}
+              tintColor={colors.primary}
+            />
+          ) : undefined
         }
       >
+        {/* ── TOP PART: S-Curve Wave Hero Banner (Full width edge-to-edge) ── */}
+        <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
+          <Svg
+            width={width}
+            height={bannerHeight + 30}
+            viewBox={`0 0 ${width} ${bannerHeight + 30}`}
+            style={StyleSheet.absoluteFill}
+          >
+            <Defs>
+              <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={colors.heroGradientStart} />
+                <Stop offset="50%" stopColor={colors.heroGradientMid} />
+                <Stop offset="100%" stopColor={colors.heroGradientEnd} />
+              </LinearGradient>
+              <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
+                <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
+              </LinearGradient>
+            </Defs>
+            {/* Depth back-wave */}
+            <Path d={backWavePath} fill="url(#dashBackWave)" />
+            {/* Main foreground wave */}
+            <Path d={mainWavePath} fill="url(#dashBgGrad)" />
+          </Svg>
+
+          {/* Banner content */}
+          <View style={[styles.bannerContent, { paddingTop: topInset + 6 }]}>
+            {/* Center Avatar (Enlarged) */}
+            <View style={styles.bannerAvatarBox}>
+              <Text style={styles.bannerAvatarText}>{initials}</Text>
+              <View style={styles.bannerAvatarDot} />
+            </View>
+
+            {/* Greeting heading */}
+            <Text style={styles.bannerHeading}>
+              Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
+            </Text>
+
+            {/* Role Badge */}
+            <View style={styles.bannerRoleBadge}>
+              <Text style={styles.bannerRoleText}>
+                {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* ── BOTTOM PART: MERGE DASHBOARD & PROFILE ── */}
         <View style={[styles.bodyContainer, { width }]}>
-          {isAdmin && (
+          {isAdmin && !isEditing && (
             <>
               {/* 1. Dashboard 4 KPI Horizontal Swipe */}
               <ScrollView
@@ -401,7 +413,12 @@ export const ProfileScreen: React.FC = () => {
 
                 <TouchableOpacity
                   style={styles.editProfileBtn}
-                  onPress={() => setIsEditing(true)}
+                  onPress={() => {
+                    setIsEditing(true);
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 120);
+                  }}
                   activeOpacity={0.75}
                 >
                   <EditIcon size={13} color={colors.primary} />
@@ -516,6 +533,11 @@ export const ProfileScreen: React.FC = () => {
                 value={mobNo}
                 onChangeText={setMobNo}
                 keyboardType="phone-pad"
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 120);
+                }}
               />
 
               <View style={styles.formActionsRow}>
@@ -558,10 +580,10 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.logoutCardBtnText}>Sign Out of Device</Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Inter_Chat Version 1.30.09</Text>
+          <Text style={styles.versionText}>Inter_Chat Version 2.01.10</Text>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 

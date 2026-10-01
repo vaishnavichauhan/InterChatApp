@@ -64,6 +64,13 @@ export const sendChatMessage = async (payload: SendMessagePayload) => {
   return res.data;
 };
 
+export const deleteMessage = async (messageId: number, deleteType: 'FOR_ME' | 'FOR_EVERYONE' = 'FOR_ME') => {
+  const res = await apiClient.delete(`/chat/messages/${messageId}`, {
+    data: { deleteType },
+  });
+  return res.data;
+};
+
 export interface FileUploadAsset {
   uri: string;
   name: string;
@@ -83,5 +90,10 @@ export const uploadChatAttachment = async (asset: FileUploadAsset) => {
       'Content-Type': 'multipart/form-data',
     },
   });
+  return res.data;
+};
+
+export const getOnlineUsers = async (): Promise<{ success: boolean; onlineUserIds: (string | number)[] }> => {
+  const res = await apiClient.get('/chat/online-users');
   return res.data;
 };
