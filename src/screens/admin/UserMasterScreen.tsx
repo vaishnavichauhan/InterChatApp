@@ -418,108 +418,92 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
 
   return (
     <View style={styles.container}>
-      <AppHeader title="User Master"
-      rightAction
-      showBack onBack={() => navigation.goBack()} />
-
-      {/* ── Top Bar Upper / Above Tabs: Title & "+ Create User" Button ── */}
-      <View style={styles.upperActionHeader}>
-        <View style={styles.upperActionTextCol}>
-          <Text style={styles.screenHeading}>User Master & Staff</Text>
-          <Text style={styles.screenSubheading}>
-            {users.length} registered {users.length === 1 ? 'user' : 'users'} • {pendingDevices.length} pending
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.createUserBtn, shadows.md]}
-          onPress={handleOpenCreate}
-          activeOpacity={0.85}
-        >
-          {/* Linear Gradient Background */}
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={StyleSheet.absoluteFill}
+      <AppHeader
+        title="User Master"
+        titleAlign="left"
+        showBack
+        onBack={() => navigation.goBack()}
+        rightAction={
+          <TouchableOpacity
+            style={[styles.createUserBtn, shadows.md]}
+            onPress={handleOpenCreate}
+            activeOpacity={0.85}
           >
-            <Defs>
-              <LinearGradient id="createUserBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
-                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100" height="100" fill="url(#createUserBtnGrad)" />
-          </Svg>
+            {/* Linear Gradient Background */}
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <Defs>
+                <LinearGradient id="createUserBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                  <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100" height="100" fill="url(#createUserBtnGrad)" />
+            </Svg>
 
-          <View style={styles.createUserBtnInner}>
-            <View style={styles.createUserIconCircle}>
-              <PlusIcon size={12} color={colors.buttonPrimary} />
+            <View style={styles.createUserBtnInner}>
+              <View style={styles.createUserIconCircle}>
+                <PlusIcon size={12} color={colors.buttonPrimary} />
+              </View>
+              <Text style={styles.createUserBtnText}>Create User</Text>
             </View>
-            <Text style={styles.createUserBtnText}>Create User</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        }
+      />
 
-      {/* ── Full Width Tab Bar (Users Directory, Pending Devices, Device Audit Logs) ── */}
-      <View style={styles.fullWidthTabBar}>
-        <TouchableOpacity
-          style={[styles.fullWidthTab, activeTab === 'users' && styles.fullWidthTabActive]}
-          onPress={() => setActiveTab('users')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.fullWidthTabInner}>
-            {/* <UsersIcon size={14} color={activeTab === 'users' ? colors.primary : '#64748b'} /> */}
+      {/* ── Pill Tab Bar ── */}
+      <View style={styles.pillTabBarWrap}>
+        <View style={styles.pillTabBar}>
+          <TouchableOpacity
+            style={[styles.pillTab, activeTab === 'users' && styles.pillTabActive]}
+            onPress={() => setActiveTab('users')}
+            activeOpacity={0.8}
+          >
             <Text
-              style={[styles.fullWidthTabText, activeTab === 'users' && styles.fullWidthTabTextActive]}
+              style={[styles.pillTabText, activeTab === 'users' && styles.pillTabTextActive]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.82}
+              minimumFontScale={0.8}
             >
               Users Directory ({users.length})
             </Text>
-          </View>
-          <View style={[styles.fullWidthTabIndicator, activeTab === 'users' && styles.fullWidthTabIndicatorActive]} />
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.fullWidthTab, activeTab === 'devices' && styles.fullWidthTabActive]}
-          onPress={() => setActiveTab('devices')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.fullWidthTabInner}>
-            {/* <MobileIcon size={14} color={activeTab === 'devices' ? colors.primary : '#64748b'} /> */}
+          <TouchableOpacity
+            style={[styles.pillTab, activeTab === 'devices' && styles.pillTabActive]}
+            onPress={() => setActiveTab('devices')}
+            activeOpacity={0.8}
+          >
             <Text
-              style={[styles.fullWidthTabText, activeTab === 'devices' && styles.fullWidthTabTextActive]}
+              style={[styles.pillTabText, activeTab === 'devices' && styles.pillTabTextActive]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.82}
+              minimumFontScale={0.8}
             >
-              Pending Devices ({pendingDevices.length})
+              Pending ({pendingDevices.length})
             </Text>
-          </View>
-          <View style={[styles.fullWidthTabIndicator, activeTab === 'devices' && styles.fullWidthTabIndicatorActive]} />
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.fullWidthTab, activeTab === 'audit' && styles.fullWidthTabActive]}
-          onPress={() => setActiveTab('audit')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.fullWidthTabInner}>
-            {/* <ClockIcon size={14} color={activeTab === 'audit' ? colors.primary : '#64748b'} /> */}
+          <TouchableOpacity
+            style={[styles.pillTab, activeTab === 'audit' && styles.pillTabActive]}
+            onPress={() => setActiveTab('audit')}
+            activeOpacity={0.8}
+          >
             <Text
-              style={[styles.fullWidthTabText, activeTab === 'audit' && styles.fullWidthTabTextActive]}
+              style={[styles.pillTabText, activeTab === 'audit' && styles.pillTabTextActive]}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.82}
+              minimumFontScale={0.8}
             >
-              Device Audit Log ({auditLogs.length})
+              Audit Log ({auditLogs.length})
             </Text>
-          </View>
-          <View style={[styles.fullWidthTabIndicator, activeTab === 'audit' && styles.fullWidthTabIndicatorActive]} />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Content Section ── */}
@@ -754,45 +738,49 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                   </View>
                 </View>
 
-                {/* ── Card Footer Actions: Edit, Deactivate/Activate, Revoke ── */}
+                {/* ── Card Footer: Divider + Actions ── */}
+                <View style={styles.cardDivider} />
                 <View style={styles.cardActionsRow}>
+                  {/* Left: Toggle + Revoke */}
+                  <View style={styles.cardActionsLeft}>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionBtnToggle,
+                        isActive ? styles.actionBtnDeactivate : styles.actionBtnActivate,
+                      ]}
+                      onPress={() => handleToggleActive(item.id, item.active)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.actionBtnToggleText,
+                          isActive ? styles.actionBtnDeactivateText : styles.actionBtnActivateText,
+                        ]}
+                      >
+                        {isActive ? 'Deactivate' : 'Activate'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {item.device_status === 'approved' && (
+                      <TouchableOpacity
+                        style={styles.actionBtnRevoke}
+                        onPress={() => handleRevokeDevice(item.id)}
+                        activeOpacity={0.7}
+                      >
+                        <BanIcon size={12} color="#ef4444" />
+                        <Text style={styles.actionBtnRevokeText}>Revoke</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* Right: Edit icon only */}
                   <TouchableOpacity
                     style={styles.actionBtnEdit}
                     onPress={() => handleOpenEdit(item)}
                     activeOpacity={0.7}
                   >
-                    <EditIcon size={13} color={colors.primary} />
-                    <Text style={styles.actionBtnEditText}>Edit</Text>
+                    <EditIcon size={16} color="#334155" />
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.actionBtnToggle,
-                      isActive ? styles.actionBtnDeactivate : styles.actionBtnActivate,
-                    ]}
-                    onPress={() => handleToggleActive(item.id, item.active)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.actionBtnToggleText,
-                        isActive ? styles.actionBtnDeactivateText : styles.actionBtnActivateText,
-                      ]}
-                    >
-                      {isActive ? 'Deactivate' : 'Activate'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {item.device_status === 'approved' && (
-                    <TouchableOpacity
-                      style={styles.actionBtnRevoke}
-                      onPress={() => handleRevokeDevice(item.id)}
-                      activeOpacity={0.7}
-                    >
-                      <BanIcon size={13} color="#ef4444" />
-                      <Text style={styles.actionBtnRevokeText}>Revoke</Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               </View>
             );
@@ -1410,54 +1398,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* ── Full Width Connected Tabs ── */
-  fullWidthTabBar: {
-    flexDirection: 'row',
+  /* ── Pill Tab Bar ── */
+  pillTabBarWrap: {
     backgroundColor: '#ffffff',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    width: '100%',
+    borderBottomColor: '#f1f5f9',
   },
-  fullWidthTab: {
+  pillTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 24,
+    padding: 4,
+    gap: 4,
+  },
+  pillTab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    position: 'relative',
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 20,
+  },
+  pillTabActive: {
     backgroundColor: '#ffffff',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  fullWidthTabActive: {
-    backgroundColor: '#f8fafc',
-  },
-  fullWidthTabInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 4,
-  },
-  fullWidthTabText: {
+  pillTabText: {
     fontSize: 11.5,
     fontWeight: fontWeights.semibold,
     color: '#64748b',
     textAlign: 'center',
   },
-  fullWidthTabTextActive: {
+  pillTabTextActive: {
     color: colors.primary,
     fontWeight: fontWeights.extrabold,
-  },
-  fullWidthTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: 'transparent',
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-  },
-  fullWidthTabIndicatorActive: {
-    backgroundColor: colors.primary,
   },
 
   /* ── Inside Screen Header ── */
@@ -1573,17 +1553,23 @@ const styles = StyleSheet.create({
   /* ── User Card Architecture ── */
   userCard: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: spacing.md,
     marginHorizontal: spacing.lg,
     marginVertical: 6,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e8edf3',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 2,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginTop: 10,
+    marginBottom: 10,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1882,20 +1868,25 @@ const styles = StyleSheet.create({
   cardActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 6,
+    justifyContent: 'space-between',
     gap: 8,
   },
-  actionBtnEdit: {
-    flex: 1,
+  cardActionsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  actionBtnEdit: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySubtle,
-    paddingVertical: 7.5,
-    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
     borderWidth: 1,
-    borderColor: colors.primaryMuted,
-    gap: 4,
+    borderColor: '#cbd5e1',
+    flexShrink: 0,
   },
   actionBtnEditText: {
     fontSize: 11.5,

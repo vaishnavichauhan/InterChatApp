@@ -19,6 +19,7 @@ import { useChatStore } from '../store/chatStore';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
 import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
+import { ToastBanner } from '../components/common/ToastBanner';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -79,6 +80,7 @@ export const RootNavigator = () => {
           )}
         </Stack.Navigator>
         {isAuthenticated && <WatermarkOverlay />}
+        <ToastBanner />
       </View>
     </NavigationContainer>
   );

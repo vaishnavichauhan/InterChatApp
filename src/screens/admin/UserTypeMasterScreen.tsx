@@ -588,10 +588,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           return (
             <View
               key={item.key}
-              style={[
-                styles.capabilitySquareCard,
-                { backgroundColor: tile.bg, borderColor: tile.border },
-              ]}
+              style={styles.capabilitySquareCard}
             >
               <View style={styles.squareCardIconWrap}>
                 {tile.icon(tile.color)}
@@ -612,44 +609,6 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
   // Header Component for List
   const renderListHeader = () => (
     <View style={styles.listHeaderContainer}>
-      {/* ── Top Action Bar: Title & "+ Create Role" Button ── */}
-      <View style={styles.topActionBar}>
-        <View style={styles.topActionLeft}>
-          <Text style={styles.screenHeading}>Role & Permissions</Text>
-          <Text style={styles.screenSubheading}>
-            {data.length} {data.length === 1 ? 'role profile' : 'role profiles'} configured
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.createRoleBtn, shadows.md]}
-          onPress={handleOpenCreate}
-          activeOpacity={0.85}
-        >
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={StyleSheet.absoluteFill}
-          >
-            <Defs>
-              <LinearGradient id="createRoleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
-                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100" height="100" fill="url(#createRoleGrad)" />
-          </Svg>
-
-          <View style={styles.createRoleBtnInner}>
-            <View style={styles.createRoleIconCircle}>
-              <PlusIcon size={12} color={colors.buttonPrimary} />
-            </View>
-            <Text style={styles.createRoleBtnText}>Create Role</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
       {/* ── Search Bar & Authority Tier Filter Row ── */}
       <View style={styles.searchFilterRow}>
         <View style={styles.searchBar}>
@@ -690,9 +649,38 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     <View style={styles.container}>
       <AppHeader
         title="User Type Master"
+        titleAlign="left"
         showBack
-        rightAction
         onBack={() => navigation.goBack()}
+        rightAction={
+          <TouchableOpacity
+            style={[styles.createRoleBtn, shadows.md]}
+            onPress={handleOpenCreate}
+            activeOpacity={0.85}
+          >
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <Defs>
+                <LinearGradient id="createRoleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                  <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100" height="100" fill="url(#createRoleGrad)" />
+            </Svg>
+            <View style={styles.createRoleBtnInner}>
+              <View style={styles.createRoleIconCircle}>
+                <PlusIcon size={12} color={colors.buttonPrimary} />
+              </View>
+              <Text style={styles.createRoleBtnText}>Create Role</Text>
+            </View>
+          </TouchableOpacity>
+        }
       />
 
       {loading ? (
@@ -727,6 +715,23 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
             return (
               <View style={[styles.roleCard, shadows.sm]}>
                 {/* ── Card Header: #ID, Role Title & Tier Pill ── */}
+                {/* ── Tier Badge: Top-right corner ── */}
+                <View
+                  style={[
+                    styles.tierBadgeCorner,
+                    hasAdminPerm ? styles.tierBadgeAdmin : styles.tierBadgeUser,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tierBadgeText,
+                      hasAdminPerm ? styles.tierBadgeTextAdmin : styles.tierBadgeTextUser,
+                    ]}
+                  >
+                    {hasAdminPerm ? 'Admin Tier' : 'User Tier'}
+                  </Text>
+                </View>
+
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.idTagBox}>
                     <Text style={styles.idTagText}>{item.id}.</Text>
@@ -736,21 +741,6 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                       <Text style={styles.roleNameText} numberOfLines={1}>
                         {item.type_name}
                       </Text>
-                      <View
-                        style={[
-                          styles.tierBadge,
-                          hasAdminPerm ? styles.tierBadgeAdmin : styles.tierBadgeUser,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.tierBadgeText,
-                            hasAdminPerm ? styles.tierBadgeTextAdmin : styles.tierBadgeTextUser,
-                          ]}
-                        >
-                          {hasAdminPerm ? 'Admin Tier' : 'User Tier'}
-                        </Text>
-                      </View>
                     </View>
                   </View>
                 </View>
@@ -785,7 +775,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                       activeOpacity={0.7}
                       accessibilityLabel="Edit Role"
                     >
-                      <EditIcon size={15} color={colors.primary} />
+                      <EditIcon size={15} color="#334155" />
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -1249,6 +1239,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     minHeight: 180,
+    position: 'relative',
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1295,6 +1286,16 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
+  },
+  tierBadgeCorner: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+    zIndex: 1,
   },
   tierBadgeAdmin: {
     backgroundColor: '#f5f3ff',
@@ -1365,14 +1366,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   capabilitySquareCard: {
-    width: 70,
-    height: 68,
+    width: 68,
+    height: 66,
     borderRadius: 12,
     borderWidth: 1,
+    borderColor: '#e8edf3',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     paddingVertical: 6,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
   },
   squareCardIconWrap: {
     height: 26,
@@ -1427,9 +1435,9 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: '#f5f3ff',
+    backgroundColor: '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#ddd6fe',
+    borderColor: '#cbd5e1',
     alignItems: 'center',
     justifyContent: 'center',
   },

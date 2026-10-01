@@ -16,6 +16,7 @@ interface AppHeaderProps {
   rightAction?: React.ReactNode | boolean;
   showUserInfo?: boolean;
   onPressUser?: () => void;
+  titleAlign?: 'center' | 'left';
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -28,6 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   rightAction,
   showUserInfo,
   onPressUser,
+  titleAlign = 'center',
 }) => {
   const insets = useSafeAreaInsets();
   const androidStatusHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
@@ -100,17 +102,41 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             )}
           </View>
 
-          {/* Centered Title Area */}
+          {/* Title Area (Centered or Left-aligned) */}
           {title ? (
             <View
-              style={[styles.titleCenterContainer, { top: topInset, height: 58 }]}
+              style={[
+                styles.titleCenterContainer,
+                { top: topInset, height: 58 },
+                titleAlign === 'left'
+                  ? [
+                      styles.titleLeftContainer,
+                      {
+                        left: showBack || leftAction || showLogo ? 58 : 16,
+                        right: React.isValidElement(rightAction) ? 125 : 40,
+                      },
+                    ]
+                  : React.isValidElement(rightAction) && styles.titleWithRightAction,
+              ]}
               pointerEvents="box-none"
             >
-              <Text style={styles.customTitle} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.customTitle,
+                  titleAlign === 'left' && styles.customTitleLeft,
+                ]}
+                numberOfLines={1}
+              >
                 {title}
               </Text>
               {subtitle ? (
-                <Text style={styles.subtitleText} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.subtitleText,
+                    titleAlign === 'left' && styles.subtitleTextLeft,
+                  ]}
+                  numberOfLines={1}
+                >
                   {subtitle}
                 </Text>
               ) : null}
@@ -199,6 +225,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  titleLeftContainer: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  customTitleLeft: {
+    textAlign: 'left',
+  },
+  subtitleTextLeft: {
+    textAlign: 'left',
+  },
+  titleWithRightAction: {
+    left: 48,
+    right: 120,
+    alignItems: 'center',
   },
   brandRow: {
     flexDirection: 'row',

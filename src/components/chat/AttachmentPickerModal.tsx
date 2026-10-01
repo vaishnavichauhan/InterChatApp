@@ -13,8 +13,14 @@ import {
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { pick, types } from '@react-native-documents/picker';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
-import { CameraIcon, FileIcon, XMarkIcon } from '../icons/SvgIcons';
+import {
+  ColorfulCameraIcon,
+  ColorfulPhotoIcon,
+  ColorfulDocumentIcon,
+  XMarkIcon,
+} from '../icons/SvgIcons';
 import { FileUploadAsset } from '../../api/chatApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AttachmentPickerModalProps {
   visible: boolean;
@@ -53,6 +59,7 @@ export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
   canCamera = true,
   canUpload = true,
 }) => {
+  const insets = useSafeAreaInsets();
   const handleLaunchCamera = async () => {
     try {
       const hasPermission = await requestCameraPermission();
@@ -158,56 +165,57 @@ export const AttachmentPickerModal: React.FC<AttachmentPickerModalProps> = ({
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) + spacing.md }]}>
+              {/* Drag Handle Indicator */}
+              <View style={styles.handleBar} />
+
               <View style={styles.header}>
                 <Text style={styles.title}>Select Media or File</Text>
-                <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                  <XMarkIcon size={20} color={colors.textMuted} />
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={styles.closeBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <XMarkIcon size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.optionsGrid}>
-                {canCamera && (
-                  <TouchableOpacity
-                    style={styles.optionItem}
-                    onPress={handleLaunchCamera}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.iconWrap, { backgroundColor: '#e0efff' }]}>
-                      <CameraIcon size={24} color={colors.primary} />
-                    </View>
-                    <Text style={styles.optionLabel}>Camera</Text>
-                    <Text style={styles.optionDesc}>Capture photo/video</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.optionItem, !canCamera && styles.optionItemDisabled]}
+                  onPress={handleLaunchCamera}
+                  activeOpacity={0.7}
+                  disabled={!canCamera}
+                >
+                  <View style={styles.iconWrap}>
+                    <ColorfulCameraIcon size={52} />
+                  </View>
+                  <Text style={styles.optionLabel}>Camera</Text>
+                </TouchableOpacity>
 
-                {canUpload && (
-                  <TouchableOpacity
-                    style={styles.optionItem}
-                    onPress={handleLaunchGallery}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.iconWrap, { backgroundColor: '#f0fdf4' }]}>
-                      <CameraIcon size={24} color={colors.success} />
-                    </View>
-                    <Text style={styles.optionLabel}>Photo Library</Text>
-                    <Text style={styles.optionDesc}>Choose from photos</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.optionItem, !canUpload && styles.optionItemDisabled]}
+                  onPress={handleLaunchGallery}
+                  activeOpacity={0.7}
+                  disabled={!canUpload}
+                >
+                  <View style={styles.iconWrap}>
+                    <ColorfulPhotoIcon size={52} />
+                  </View>
+                  <Text style={styles.optionLabel}>Photo</Text>
+                </TouchableOpacity>
 
-                {canUpload && (
-                  <TouchableOpacity
-                    style={styles.optionItem}
-                    onPress={handlePickDocument}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.iconWrap, { backgroundColor: '#faf5ff' }]}>
-                      <FileIcon size={24} color="#7c3aed" />
-                    </View>
-                    <Text style={styles.optionLabel}>Document</Text>
-                    <Text style={styles.optionDesc}>PDF, Excel, Word</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.optionItem, !canUpload && styles.optionItemDisabled]}
+                  onPress={handlePickDocument}
+                  activeOpacity={0.7}
+                  disabled={!canUpload}
+                >
+                  <View style={styles.iconWrap}>
+                    <ColorfulDocumentIcon size={52} />
+                  </View>
+                  <Text style={styles.optionLabel}>Document</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -225,16 +233,25 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  handleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E2E8F0',
+    alignSelf: 'center',
+    marginBottom: spacing.md,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
+    paddingHorizontal: 2,
   },
   title: {
     fontSize: fontSizes.lg,
@@ -242,39 +259,48 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   closeBtn: {
-    padding: spacing.xs,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   optionsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: spacing.md,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
   optionItem: {
     flex: 1,
     alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+    justifyContent: 'center',
+    paddingVertical: spacing.xs,
+    backgroundColor: 'transparent',
+  },
+  optionItemDisabled: {
+    opacity: 0.3,
   },
   iconWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: borderRadius.md,
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs + 2,
+    backgroundColor: 'transparent',
   },
   optionLabel: {
-    fontSize: fontSizes.sm,
-    fontWeight: fontWeights.bold,
+    fontSize: 13,
+    fontWeight: fontWeights.semibold,
     color: colors.textPrimary,
-    marginBottom: 2,
+    textAlign: 'center',
   },
   optionDesc: {
-    fontSize: fontSizes.tiny,
+    fontSize: 11,
+    lineHeight: 14,
     color: colors.textMuted,
     textAlign: 'center',
+    minHeight: 28,
   },
 });

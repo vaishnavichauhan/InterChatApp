@@ -64,9 +64,9 @@ export const ProfileScreen: React.FC = () => {
   const initials = getInitials(user?.name || user?.username || 'U');
 
   // Dashboard wave banner geometry (same for Admin & User)
-  const bannerHeight = 300;
-  const curveLeftY = bannerHeight - 38;
-  const curveRightY = bannerHeight - 72;
+  const bannerHeight = 315;
+  const curveLeftY = bannerHeight - 34;
+  const curveRightY = bannerHeight - 64;
   const mainWavePath = `M 0 0 L ${width} 0 L ${width} ${curveRightY} C ${width * 0.70} ${curveRightY - 20}, ${width * 0.35} ${bannerHeight + 10}, 0 ${curveLeftY} Z`;
   const backWavePath = `M 0 0 L ${width} 0 L ${width} ${curveRightY + 24} C ${width * 0.68} ${curveRightY + 6}, ${width * 0.32} ${bannerHeight + 28}, 0 ${curveLeftY + 16} Z`;
 
@@ -202,8 +202,58 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* ── TOP PART: S-Curve Wave Hero Banner (Full width edge-to-edge, above ScrollView) ── */}
+      <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
+        <Svg
+          width={width}
+          height={bannerHeight + 30}
+          viewBox={`0 0 ${width} ${bannerHeight + 30}`}
+          style={StyleSheet.absoluteFill}
+        >
+          <Defs>
+            <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={colors.heroGradientStart} />
+              <Stop offset="50%" stopColor={colors.heroGradientMid} />
+              <Stop offset="100%" stopColor={colors.heroGradientEnd} />
+            </LinearGradient>
+            <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
+              <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
+            </LinearGradient>
+          </Defs>
+          {/* Depth back-wave */}
+          <Path d={backWavePath} fill="url(#dashBackWave)" />
+          {/* Main foreground wave */}
+          <Path d={mainWavePath} fill="url(#dashBgGrad)" />
+        </Svg>
+
+        {/* Banner content */}
+        <View style={[styles.bannerContent, { paddingTop: topInset + 6 }]}>
+          {/* Center Avatar (Enlarged) */}
+          <View style={styles.bannerAvatarBox}>
+            <Text style={styles.bannerAvatarText}>{initials}</Text>
+            <View style={styles.bannerAvatarDot} />
+          </View>
+
+          {/* Greeting heading */}
+          <Text style={styles.bannerHeading}>
+            Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
+          </Text>
+
+          {/* Role Badge */}
+          <View style={styles.bannerRoleBadge}>
+            <Text style={styles.bannerRoleText}>
+              {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── SCROLLVIEW FOR CONTENT AFTER TOP PART ── */}
       <ScrollView
-        style={styles.container}
+        style={styles.scrollArea}
         contentContainerStyle={[
           styles.scrollContainer,
           { paddingBottom: Math.max(insets.bottom, 24) + spacing.xl },
@@ -219,129 +269,85 @@ export const ProfileScreen: React.FC = () => {
           />
         }
       >
-        {/* ── TOP PART: S-Curve Wave Hero Banner (Consistent for Admin & User) ── */}
-        <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
-          <Svg
-            width={width}
-            height={bannerHeight + 30}
-            viewBox={`0 0 ${width} ${bannerHeight + 30}`}
-            style={StyleSheet.absoluteFill}
-          >
-            <Defs>
-              <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor={colors.heroGradientStart} />
-                <Stop offset="50%" stopColor={colors.heroGradientMid} />
-                <Stop offset="100%" stopColor={colors.heroGradientEnd} />
-              </LinearGradient>
-              <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
-                <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
-              </LinearGradient>
-            </Defs>
-            {/* Depth back-wave */}
-            <Path d={backWavePath} fill="url(#dashBackWave)" />
-            {/* Main foreground wave */}
-            <Path d={mainWavePath} fill="url(#dashBgGrad)" />
-          </Svg>
-
-          {/* Banner content */}
-          <View style={styles.bannerContent}>
-            {/* Top Row: User Avatar + Name + Role + Top Right Logout Button */}
-            <View style={styles.bannerUserRow}>
-              <View style={styles.bannerAvatarBox}>
-                <Text style={styles.bannerAvatarText}>{initials}</Text>
-                <View style={styles.bannerAvatarDot} />
-              </View>
-              <View style={styles.bannerUserInfo}>
-                <Text style={styles.bannerUserName} numberOfLines={1}>
-                  {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}
-                </Text>
-                <View style={styles.bannerRoleBadge}>
-                  <Text style={styles.bannerRoleText}>
-                    {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Top Right Logout Button */}
-              <TouchableOpacity
-                style={styles.bannerLogoutBtn}
-                onPress={handleLogout}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <LogOutIcon size={18} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Greeting heading */}
-            <Text style={styles.bannerHeading}>
-              Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
-            </Text>
-
-            {/* Subtitle */}
-            <Text style={styles.bannerSubtitle}>
-              {isAdmin
-                ? 'Manage user accounts, role-based permissions, internal enterprise communications, and cloud storage drivers from a single portal.'
-                : 'Manage your profile details, department assignments, and enterprise communications from your personal account.'}
-            </Text>
-          </View>
-        </View>
-
         {/* ── BOTTOM PART: MERGE DASHBOARD & PROFILE ── */}
         <View style={[styles.bodyContainer, { width }]}>
           {isAdmin && (
             <>
-              {/* 1. Dashboard 4 KPI Grid */}
-              <View style={styles.kpiGrid}>
-                <View style={[styles.kpiCard, shadows.sm]}>
-                  <View style={[styles.kpiIconWrap, { backgroundColor: '#e0efff' }]}>
-                    <UsersIcon size={20} color={colors.primary} />
-                  </View>
-                  <View style={styles.kpiTextCol}>
-                    <Text style={styles.kpiLabel}>TOTAL USERS</Text>
-                    <Text style={styles.kpiValue}>{totalUsers}</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.kpiCard, shadows.sm]}>
-                  <View style={[styles.kpiIconWrap, { backgroundColor: '#dcfce7' }]}>
-                    <ShieldCheckIcon size={20} color={colors.success} />
-                  </View>
-                  <View style={styles.kpiTextCol}>
-                    <Text style={styles.kpiLabel}>ACTIVE USERS</Text>
-                    <Text style={[styles.kpiValue, { color: colors.success }]}>{activeUsers}</Text>
-                  </View>
-                </View>
-
+              {/* 1. Dashboard 4 KPI Horizontal Swipe */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.kpiScrollView}
+                contentContainerStyle={styles.kpiScrollContent}
+              >
+                {/* 1. Total Users (Blue) */}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('UserMaster')}
-                  style={[styles.kpiCard, shadows.sm]}
-                  activeOpacity={0.7}
+                  style={[styles.kpiCard, styles.kpiCardBlue, shadows.sm]}
+                  activeOpacity={0.75}
                 >
-                  <View style={[styles.kpiIconWrap, { backgroundColor: '#fef3c7' }]}>
-                    <MobileIcon size={20} color={colors.warning} />
+                  <View style={styles.kpiIconWrap}>
+                    <UsersIcon size={24} color="#2563EB" />
                   </View>
                   <View style={styles.kpiTextCol}>
-                    <Text style={styles.kpiLabel}>PENDING DEVICES</Text>
-                    <Text style={[styles.kpiValue, { color: colors.warning }]}>{pendingDevices}</Text>
+                    <Text style={[styles.kpiValue, { color: '#1E3A8A' }]}>{totalUsers}</Text>
+                    <Text style={[styles.kpiLabel, { color: '#3B82F6' }]} numberOfLines={1}>
+                      TOTAL USERS
+                    </Text>
                   </View>
                 </TouchableOpacity>
 
+                {/* 2. Active Users (Green) */}
                 <TouchableOpacity
-                  style={[styles.kpiCard, shadows.sm]}
-                  onPress={() => navigation.navigate('UserTypeMaster')}
-                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('UserMaster')}
+                  style={[styles.kpiCard, styles.kpiCardGreen, shadows.sm]}
+                  activeOpacity={0.75}
                 >
-                  <View style={[styles.kpiIconWrap, { backgroundColor: '#f3e8ff' }]}>
-                    <ShieldCheckIcon size={20} color="#7c3aed" />
+                  <View style={styles.kpiIconWrap}>
+                    <ShieldCheckIcon size={24} color="#059669" />
                   </View>
                   <View style={styles.kpiTextCol}>
-                    <Text style={styles.kpiLabel}>USER ROLES</Text>
-                    <Text style={[styles.kpiValue, { color: '#7c3aed' }]}>{totalUserTypes}</Text>
+                    <Text style={[styles.kpiValue, { color: '#064E3B' }]}>{activeUsers}</Text>
+                    <Text style={[styles.kpiLabel, { color: '#10B981' }]} numberOfLines={1}>
+                      ACTIVE USERS
+                    </Text>
                   </View>
                 </TouchableOpacity>
-              </View>
+
+                {/* 3. Pending Devices (Amber) */}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('UserMaster')}
+                  style={[styles.kpiCard, styles.kpiCardAmber, shadows.sm]}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.kpiIconWrap}>
+                    <MobileIcon size={24} color="#D97706" />
+                  </View>
+                  <View style={styles.kpiTextCol}>
+                    <Text style={[styles.kpiValue, { color: '#78350F' }]}>{pendingDevices}</Text>
+                    <Text style={[styles.kpiLabel, { color: '#D97706' }]} numberOfLines={1}>
+                      PENDING DEVICES
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* 4. User Roles (Purple) */}
+                <TouchableOpacity
+                  style={[styles.kpiCard, styles.kpiCardPurple, shadows.sm]}
+                  onPress={() => navigation.navigate('UserTypeMaster')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.kpiIconWrap}>
+                    <ShieldCheckIcon size={24} color="#7C3AED" />
+                  </View>
+                  <View style={styles.kpiTextCol}>
+                    <Text style={[styles.kpiValue, { color: '#4C1D95' }]}>{totalUserTypes}</Text>
+                    <Text style={[styles.kpiLabel, { color: '#7C3AED' }]} numberOfLines={1}>
+                      USER ROLES
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </ScrollView>
 
               {/* 2. Enterprise Administration Masters Section */}
               <View style={styles.mastersSectionWrap}>
@@ -379,29 +385,35 @@ export const ProfileScreen: React.FC = () => {
           )}
 
           {/* 3. Personal Details Section */}
+          {/* 3. Personal Details Section */}
           {!isEditing ? (
-            <View style={styles.infoCard}>
+            <View style={[styles.infoCard, shadows.sm]}>
               <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionHeaderTitleCol}>
-                  <Text style={styles.sectionTitle}>PERSONAL DETAILS</Text>
-                  <Text style={styles.sectionSubtitle}>Verified organization account data</Text>
+                <View style={styles.sectionHeaderLeft}>
+                  <View style={styles.sectionIconBadge}>
+                    <UserIcon size={16} color={colors.primary} />
+                  </View>
+                  <View style={styles.sectionHeaderTitleCol}>
+                    <Text style={styles.sectionTitle}>Personal Details</Text>
+                    <Text style={styles.sectionSubtitle}>Verified organization account</Text>
+                  </View>
                 </View>
 
                 <TouchableOpacity
                   style={styles.editProfileBtn}
                   onPress={() => setIsEditing(true)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
                 >
-                  <EditIcon size={14} color={colors.primary} />
+                  <EditIcon size={13} color={colors.primary} />
                   <Text style={styles.editProfileBtnText}>Edit Profile</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.detailsList}>
                 {/* Full Name */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: colors.primarySubtle }]}>
-                    <UserIcon size={18} color={colors.primary} />
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                    <UserIcon size={18} color="#2563EB" />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>FULL NAME</Text>
@@ -410,9 +422,9 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Username */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: '#fffbeb' }]}>
-                    <ShieldUserIcon size={18} color="#d97706" />
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#FFFBEB' }]}>
+                    <ShieldUserIcon size={18} color="#D97706" />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>USERNAME</Text>
@@ -421,8 +433,8 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Email Address */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: '#f0fdf4' }]}>
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#ECFDF5' }]}>
                     <MailIcon size={18} color="#059669" />
                   </View>
                   <View style={styles.detailTextCol}>
@@ -432,9 +444,9 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Mobile Number */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: '#faf5ff' }]}>
-                    <PhoneIcon size={18} color="#7c3aed" />
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#F5F3FF' }]}>
+                    <PhoneIcon size={18} color="#7C3AED" />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>MOBILE NUMBER</Text>
@@ -443,9 +455,9 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Assigned Department */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: '#ecfeff' }]}>
-                    <BuildingIcon size={18} color="#0891b2" />
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#ECFEFF' }]}>
+                    <BuildingIcon size={18} color="#0891B2" />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>DEPARTMENT</Text>
@@ -454,9 +466,9 @@ export const ProfileScreen: React.FC = () => {
                 </View>
 
                 {/* Account Role / User Type */}
-                <View style={styles.detailRow}>
-                  <View style={[styles.detailIconWrap, { backgroundColor: '#fdf2f8' }]}>
-                    <CrownIcon size={18} color="#db2777" />
+                <View style={styles.detailTile}>
+                  <View style={[styles.detailIconWrap, { backgroundColor: '#FDF2F8' }]}>
+                    <CrownIcon size={18} color="#DB2777" />
                   </View>
                   <View style={styles.detailTextCol}>
                     <Text style={styles.detailLabel}>ORGANIZATIONAL ROLE</Text>
@@ -546,7 +558,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.logoutCardBtnText}>Sign Out of Device</Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Inter_Chat Version 1.29.09</Text>
+          <Text style={styles.versionText}>Inter_Chat Version 1.30.09</Text>
         </View>
       </ScrollView>
     </View>
@@ -558,6 +570,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  scrollArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   scrollContainer: {
     paddingBottom: spacing.xxl,
   },
@@ -566,72 +582,54 @@ const styles = StyleSheet.create({
   welcomeBanner: {
     overflow: 'hidden',
     position: 'relative',
-    marginBottom: spacing.lg,
+    marginBottom: 0,
   },
   bannerContent: {
     flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
-  },
-  bannerUserRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'stretch',
-    marginBottom: spacing.xl,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 0.3,
-    borderBottomColor: 'rgba(255, 255, 255, 0.20)',
+    justifyContent: 'flex-start',
+  },
+  bannerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    width: '100%',
+    marginBottom: spacing.xs,
   },
   bannerAvatarBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.65)',
+    borderWidth: 2.5,
+    borderColor: 'rgba(255, 255, 255, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    alignSelf: 'center',
+    marginBottom: 6,
     position: 'relative',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   bannerAvatarText: {
-    fontSize: 18,
+    fontSize: 26,
     fontWeight: fontWeights.black,
     color: '#ffffff',
     letterSpacing: -0.5,
   },
   bannerAvatarDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    bottom: 1,
+    right: 1,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#10b981',
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: colors.primary,
-  },
-  bannerAppIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.20)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  bannerUserInfo: {
-    justifyContent: 'center',
-    flex: 1,
   },
   bannerLogoutBtn: {
     width: 38,
@@ -642,41 +640,35 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.sm,
   },
-  bannerUserName: {
-    fontSize: 16,
-    fontWeight: fontWeights.bold,
+  bannerHeading: {
+    fontSize: 19,
+    fontWeight: fontWeights.black,
     color: '#ffffff',
-    letterSpacing: -0.2,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 6,
   },
   bannerRoleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    alignSelf: 'center',
   },
   bannerRoleText: {
     fontSize: 10.5,
     fontWeight: fontWeights.extrabold,
-    color: 'rgba(255, 255, 255, 0.85)',
-    letterSpacing: 0.5,
-  },
-  bannerHeading: {
-    fontSize: 20,
-    fontWeight: fontWeights.black,
     color: '#ffffff',
-    textAlign: 'left',
-    lineHeight: 26,
-    marginBottom: 6,
+    letterSpacing: 0.8,
   },
   bannerSubtitle: {
-    fontSize: 13.5,
+    fontSize: 12.5,
     fontWeight: fontWeights.medium,
     color: 'rgba(255, 255, 255, 0.90)',
-    textAlign: 'left',
-    lineHeight: 20,
-    marginBottom: 10,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: spacing.sm,
   },
 
   /* ── BODY CONTAINER ── */
@@ -684,46 +676,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
 
-  /* ── 4 KPI CARDS (DASHBOARD) ── */
-  kpiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
+  /* ── 4 KPI HORIZONTAL SWIPE (DASHBOARD) ── */
+  kpiScrollView: {
+    marginHorizontal: -spacing.lg,
     marginBottom: spacing.xl,
   },
-  kpiCard: {
-    flex: 1,
-    minWidth: '45%',
+  kpiScrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 2,
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    gap: spacing.md,
   },
-  kpiIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: borderRadius.md,
+  kpiCard: {
+    width: 124,
+    height: 124,
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    borderRadius: 20,
+    borderWidth: 1.2,
+    padding: spacing.sm,
+  },
+  kpiCardBlue: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  kpiCardGreen: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  kpiCardAmber: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  kpiCardPurple: {
+    backgroundColor: '#F5F3FF',
+    borderColor: '#DDD6FE',
+  },
+  kpiIconWrap: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    backgroundColor: 'transparent',
   },
   kpiTextCol: {
-    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   kpiLabel: {
     fontSize: 9,
     fontWeight: fontWeights.bold,
-    color: colors.textMuted,
     letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 2,
   },
   kpiValue: {
-    fontSize: fontSizes.xl,
+    fontSize: 20,
     fontWeight: fontWeights.black,
-    color: colors.textPrimary,
-    marginTop: 2,
+    textAlign: 'center',
+    lineHeight: 24,
   },
 
   /* ── MASTERS SECTION (DASHBOARD) ── */
@@ -791,93 +805,111 @@ const styles = StyleSheet.create({
   /* ── PERSONAL DETAILS SECTION ── */
   infoCard: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    borderColor: '#e8edf3',
+    padding: spacing.md + 2,
+    marginBottom: spacing.xl,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  sectionIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#FFF1F2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionHeaderTitleCol: {
     flex: 1,
   },
   sectionTitle: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.extrabold,
-    color: colors.primary,
-    letterSpacing: 0.8,
+    fontSize: 15,
+    fontWeight: fontWeights.bold,
+    color: colors.textPrimary,
+    letterSpacing: -0.2,
   },
   sectionSubtitle: {
     fontSize: 11,
-    color: colors.textLight,
+    color: colors.textMuted,
     marginTop: 1,
   },
   editProfileBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.primarySubtle,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    gap: 6,
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.primaryMuted,
+    borderColor: '#FECDD3',
   },
   editProfileBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: fontWeights.bold,
     color: colors.primary,
   },
   detailsList: {
-    marginTop: spacing.xs,
+    gap: 8,
   },
-  detailRow: {
+  detailTile: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8fafc',
+    backgroundColor: '#f8fafc',
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
   detailIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: 12,
   },
   detailTextCol: {
     flex: 1,
+    justifyContent: 'center',
   },
   detailLabel: {
     fontSize: 9.5,
     fontWeight: fontWeights.bold,
     color: colors.textMuted,
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   detailValue: {
-    fontSize: fontSizes.sm,
+    fontSize: 13.5,
     fontWeight: fontWeights.semibold,
     color: colors.textPrimary,
-    marginTop: 2,
   },
 
   /* ── EDIT FORM ── */
   editFormCard: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    borderColor: '#e8edf3',
+    padding: spacing.md + 2,
+    marginBottom: spacing.xl,
   },
   editFormTitle: {
     fontSize: fontSizes.md,

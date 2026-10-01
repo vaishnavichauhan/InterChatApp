@@ -39,18 +39,22 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
 
   // Initial mount: load conversations and attach socket listeners
   useEffect(() => {
-    loadConversations();
-    setupSocketListeners();
+    if (permissions.canChat) {
+      loadConversations();
+      setupSocketListeners();
+    }
     return () => {
       cleanupSocketListeners();
     };
-  }, [loadConversations, setupSocketListeners, cleanupSocketListeners]);
+  }, [loadConversations, setupSocketListeners, cleanupSocketListeners, permissions.canChat]);
 
   // Screen focus: refresh conversations whenever user comes to or navigates back to this screen
   useFocusEffect(
     useCallback(() => {
-      loadConversations(false);
-    }, [loadConversations])
+      if (permissions.canChat) {
+        loadConversations(false);
+      }
+    }, [loadConversations, permissions.canChat])
   );
 
   const filteredConversations = useMemo(() => {
@@ -156,7 +160,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
 
       {/* Conversations List */}
       <FlatList
-        data={filteredConversations}
+        data={permissions.canChat ? filteredConversations : []}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => {
           const isOnline = item.partnerId ? onlineUserIds.includes(String(item.partnerId)) : false;
@@ -176,7 +180,12 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
           />
         }
         ListEmptyComponent={
-          isLoadingConversations ? (
+          !permissions.canChat ? (
+            <EmptyState
+              title="Access Denied"
+              description="You do not have permission to access the chat."
+            />
+          ) : isLoadingConversations ? (
             <View />
           ) : (
             <EmptyState
@@ -190,7 +199,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
           )
         }
         contentContainerStyle={
-          filteredConversations.length === 0 ? styles.emptyListContainer : undefined
+          (!permissions.canChat || filteredConversations.length === 0) ? styles.emptyListContainer : undefined
         }
       />
     </View>
@@ -200,7 +209,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({ navigation }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#ffffff',
   },
   headerActions: {
     flexDirection: 'row',
@@ -233,7 +242,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   searchSection: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#ffffff',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,

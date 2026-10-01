@@ -57,6 +57,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isImage = fileCategory === 'image';
   const fileId = attachment?.id;
 
+  const fileCategoryLabel = (
+    fileCategory && fileCategory !== 'unknown'
+      ? fileCategory
+      : (attachment?.original_name?.split('.').pop() || 'File')
+  ).toUpperCase();
+
   const imageUrl = fileId && isImage && token
     ? resolveFileUrl(`/api/chat/files/${fileId}/view?token=${encodeURIComponent(token)}`)
     : null;
@@ -104,14 +110,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       >
         {/* Sender Name in group chats for others */}
         {!isSelf && showSenderName && (
-          <Text style={styles.senderName}>
+          <Text style={[styles.senderName, Boolean(attachment) && styles.senderNameWithAttachment]}>
             {message.sender_name || message.sender_username || 'Colleague'}
           </Text>
         )}
 
         {/* Reply Quote Banner */}
         {message.parent_message_text && (
-          <View style={[styles.replyQuote, isSelf ? styles.replyQuoteSelf : styles.replyQuoteOther]}>
+          <View
+            style={[
+              styles.replyQuote,
+              isSelf ? styles.replyQuoteSelf : styles.replyQuoteOther,
+              Boolean(attachment) && styles.replyQuoteWithAttachment,
+            ]}
+          >
             <Text style={[styles.replySender, isSelf && styles.replySenderSelf]} numberOfLines={1}>
               {message.parent_sender_name || 'Replying to message'}
             </Text>
@@ -121,7 +133,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </View>
         )}
 
-        {/* Attachment Item: Image Preview or File Card with View Button */}
+        {/* Attachment Item: Image Preview or File Card with View, Download & Time */}
         {attachment ? (
           <TouchableOpacity
             style={[
@@ -143,62 +155,68 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               </View>
             )}
 
-            {/* Bottom Meta Row matching Web Frontend reference */}
-            <View style={styles.attachmentMetaRow}>
-              {/* File Icon */}
-              <View
-                style={[
-                  styles.attachmentIconWrap,
-                  isSelf ? styles.attachmentIconWrapSelf : styles.attachmentIconWrapOther,
-                ]}
-              >
-                {isImage ? (
-                  <CameraIcon size={18} color={isSelf ? '#ffffff' : colors.primary} />
-                ) : (
-                  <FileIcon size={18} color={isSelf ? '#ffffff' : colors.primary} />
-                )}
+            {/* Inner Content Area */}
+            <View style={styles.attachmentBody}>
+              {/* Row 1: Icon + Name & Details */}
+              <View style={styles.attachmentHeaderRow}>
+                {/* 1. Icon */}
+                <View style={styles.attachmentIconWrap}>
+                  {isImage ? (
+                    <CameraIcon size={18} color={colors.primary} />
+                  ) : (
+                    <FileIcon size={18} color={colors.primary} />
+                  )}
+                </View>
+
+                {/* 2. Name & 3. Details */}
+                <View style={styles.attachmentTextColumn}>
+                  <Text
+                    style={styles.attachmentName}
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                  >
+                    {attachment.original_name || 'Attachment'}
+                  </Text>
+                  <Text style={styles.attachmentSize}>
+                    {formatFileSize(attachment.file_size)} • {fileCategoryLabel}
+                  </Text>
+                </View>
               </View>
 
-              {/* Title & Subtitle */}
-              <View style={styles.attachmentTextColumn}>
-                <Text
-                  style={[styles.attachmentName, isSelf && styles.attachmentNameSelf]}
-                  numberOfLines={1}
-                  ellipsizeMode="middle"
-                >
-                  {attachment.original_name || 'Attachment'}
-                </Text>
-                <Text style={[styles.attachmentSize, isSelf && styles.attachmentSizeSelf]}>
-                  {formatFileSize(attachment.file_size)} • In-App Preview
-                </Text>
-              </View>
+              {/* Row 2: 4. View + 5. Download Icon on Left | 6. Time on Right */}
+              <View style={styles.attachmentFooterRow}>
+                {/* Action buttons (View & Download) */}
+                <View style={styles.attachmentActionsWrap}>
+                  {canView && (
+                    <TouchableOpacity
+                      style={styles.viewPillBtn}
+                      onPress={handleView}
+                      activeOpacity={0.75}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <EyeIcon size={12} color={colors.primary} />
+                      <Text style={styles.viewPillText}>
+                        View
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
-              {/* Action Buttons: View Pill and/or Download */}
-              <View style={styles.attachmentActionsRow}>
-                {canView && (
-                  <TouchableOpacity
-                    style={[styles.viewPillBtn, isSelf ? styles.viewPillBtnSelf : styles.viewPillBtnOther]}
-                    onPress={handleView}
-                    activeOpacity={0.75}
-                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                  >
-                    <EyeIcon size={13} color={isSelf ? '#ffffff' : colors.primary} />
-                    <Text style={[styles.viewPillText, isSelf ? styles.viewPillTextSelf : styles.viewPillTextOther]}>
-                      View
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                  {canDownload && (
+                    <TouchableOpacity
+                      style={styles.docDownloadBtn}
+                      onPress={() => handleDownload(attachment)}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <DownloadIcon size={13} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
-                {canDownload && (
-                  <TouchableOpacity
-                    style={[styles.docDownloadBtn, isSelf ? styles.docDownloadBtnSelf : styles.docDownloadBtnOther]}
-                    onPress={() => handleDownload(attachment)}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                  >
-                    <DownloadIcon size={14} color={isSelf ? '#ffffff' : colors.primary} />
-                  </TouchableOpacity>
-                )}
+                {/* 6. Time inside card */}
+                <Text style={styles.cardTimeText}>
+                  {formatMessageTime(message.created_at)}
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -214,27 +232,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <LockIcon size={16} color={isSelf ? colors.primary : colors.textMuted} />
             </View>
             <View style={styles.restrictedTextWrap}>
-              <Text style={[styles.restrictedTitle, isSelf && styles.restrictedTitleSelf]}>
+              <Text style={styles.restrictedTitle}>
                 Attachment Hidden
               </Text>
-              <Text style={[styles.restrictedSubtitle, isSelf && styles.restrictedSubtitleSelf]}>
+              <Text style={styles.restrictedSubtitle}>
                 Viewing restricted by policy
               </Text>
             </View>
+            <Text style={styles.cardTimeText}>
+              {formatMessageTime(message.created_at)}
+            </Text>
           </View>
         ) : null}
 
-        {/* Message Body */}
+        {/* Message Caption (if accompanying text was sent with attachment) */}
         {Boolean(message.message_text) && (
-          <Text style={[styles.messageText, isSelf ? styles.messageTextSelf : styles.messageTextOther]}>
-            {message.message_text}
-          </Text>
+          <View style={Boolean(attachment) ? styles.captionContainer : null}>
+            <Text
+              style={[
+                styles.messageText,
+                isSelf && !attachment ? styles.messageTextSelf : styles.messageTextOther,
+                Boolean(attachment) && styles.messageTextWithAttachment,
+              ]}
+            >
+              {message.message_text}
+            </Text>
+            {/* If there is caption text, show its timestamp below the caption */}
+            <Text
+              style={[
+                styles.timeText,
+                isSelf && !attachment ? styles.timeTextSelf : styles.timeTextOther,
+                Boolean(attachment) && styles.timeTextWithAttachment,
+              ]}
+            >
+              {formatMessageTime(message.created_at)}
+            </Text>
+          </View>
         )}
 
-        {/* Message Timestamp */}
-        <Text style={[styles.timeText, isSelf ? styles.timeTextSelf : styles.timeTextOther]}>
-          {formatMessageTime(message.created_at)}
-        </Text>
+        {/* Timestamp for text-only messages (when no attachment and no caption) */}
+        {!attachment && !isRestricted && !message.message_text && (
+          <Text style={[styles.timeText, isSelf ? styles.timeTextSelf : styles.timeTextOther]}>
+            {formatMessageTime(message.created_at)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -259,8 +300,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   bubbleWithAttachment: {
-    minWidth: 220,
-    maxWidth: 270,
+    padding: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    minWidth: 245,
+    maxWidth: 300,
   },
   bubbleSelf: {
     backgroundColor: colors.bubbleSent,
@@ -278,12 +322,21 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: 3,
   },
+  senderNameWithAttachment: {
+    paddingHorizontal: 6,
+    paddingTop: 2,
+    paddingBottom: 2,
+  },
   replyQuote: {
     paddingLeft: spacing.sm,
     borderLeftWidth: 3,
     marginBottom: spacing.xs,
     paddingVertical: 2,
     borderRadius: 2,
+  },
+  replyQuoteWithAttachment: {
+    marginHorizontal: 3,
+    marginBottom: 4,
   },
   replyQuoteSelf: {
     borderLeftColor: colors.primaryLight,
@@ -311,140 +364,141 @@ const styles = StyleSheet.create({
 
   /* ── Attachment Card with In-App Preview & View Button ── */
   attachmentCard: {
-    borderRadius: borderRadius.md + 2,
-    borderWidth: 1,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
     width: '100%',
-    minWidth: 220,
-    maxWidth: 290,
+    borderWidth: 1,
   },
   attachmentCardSelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
-    borderColor: 'rgba(255, 255, 255, 0.28)',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.primaryMuted,
+    borderBottomRightRadius: 4,
   },
   attachmentCardOther: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderColor: '#e2e8f0',
+    borderBottomLeftRadius: 4,
   },
   imageBannerContainer: {
     width: '100%',
-    height: 155,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    height: 165,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     overflow: 'hidden',
   },
   imageBanner: {
     width: '100%',
     height: '100%',
   },
-  attachmentMetaRow: {
+  attachmentBody: {
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 7,
+  },
+  attachmentHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
-    gap: spacing.xs + 2,
   },
   attachmentIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.sm + 2,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-  },
-  attachmentIconWrapSelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-  },
-  attachmentIconWrapOther: {
     backgroundColor: colors.primarySubtle,
   },
   attachmentTextColumn: {
     flex: 1,
+    marginLeft: 9,
     justifyContent: 'center',
-    marginRight: 4,
   },
   attachmentName: {
-    fontSize: fontSizes.xs + 0.5,
+    fontSize: 13,
     fontWeight: fontWeights.bold,
     color: '#0f172a',
-  },
-  attachmentNameSelf: {
-    color: '#ffffff',
+    lineHeight: 17,
   },
   attachmentSize: {
-    fontSize: 10,
+    fontSize: 10.5,
+    fontWeight: fontWeights.medium,
     color: '#64748b',
     marginTop: 2,
-    fontWeight: fontWeights.medium,
+    lineHeight: 14,
   },
-  attachmentSizeSelf: {
-    color: 'rgba(255, 255, 255, 0.85)',
-  },
-  attachmentActionsRow: {
+  attachmentFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    flexShrink: 0,
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingTop: 4,
+    borderTopWidth: 0.5,
+    borderTopColor: '#f1f5f9',
+  },
+  attachmentActionsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   viewPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 4.5,
-    borderRadius: borderRadius.sm + 2,
+    borderRadius: 6,
     gap: 4,
-  },
-  viewPillBtnSelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-  },
-  viewPillBtnOther: {
     backgroundColor: colors.primarySubtle,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: colors.primaryMuted,
   },
   viewPillText: {
     fontSize: 11,
     fontWeight: fontWeights.extrabold,
-  },
-  viewPillTextSelf: {
-    color: '#ffffff',
-  },
-  viewPillTextOther: {
     color: colors.primary,
   },
   docDownloadBtn: {
-    padding: 5,
-    borderRadius: borderRadius.sm + 2,
+    width: 25,
+    height: 25,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  docDownloadBtnSelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  docDownloadBtnOther: {
     backgroundColor: colors.primarySubtle,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: colors.primaryMuted,
+  },
+  cardTimeText: {
+    fontSize: 9.5,
+    fontWeight: fontWeights.medium,
+    marginLeft: 'auto',
+    paddingLeft: 6,
+    flexShrink: 0,
+    color: '#94a3b8',
+  },
+  captionContainer: {
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
 
   /* ── Restricted Attachment Placeholder Card ── */
   restrictedCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm + 2,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.xs,
+    padding: spacing.sm,
+    borderRadius: borderRadius.lg,
     width: '100%',
     minWidth: 200,
-    maxWidth: 250,
+    maxWidth: 260,
+    borderWidth: 1,
   },
   restrictedCardSelf: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.primarySubtle,
+    borderColor: colors.primaryMuted,
+    borderBottomRightRadius: 4,
   },
   restrictedCardOther: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
+    borderBottomLeftRadius: 4,
   },
   restrictedIconWrap: {
     width: 34,
@@ -472,16 +526,10 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
   },
-  restrictedTitleSelf: {
-    color: colors.textPrimary,
-  },
   restrictedSubtitle: {
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 1,
-  },
-  restrictedSubtitleSelf: {
-    color: colors.textMuted,
   },
 
   /* ── Message Text & Timestamp ── */
@@ -489,6 +537,11 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.base,
     lineHeight: 20,
     fontWeight: fontWeights.regular,
+  },
+  messageTextWithAttachment: {
+    paddingHorizontal: 8,
+    paddingTop: 5,
+    paddingBottom: 2,
   },
   messageTextSelf: {
     color: colors.bubbleSentText,
@@ -501,6 +554,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.medium,
     alignSelf: 'flex-end',
     marginTop: 3,
+  },
+  timeTextWithAttachment: {
+    paddingHorizontal: 6,
+    marginTop: 2,
+    marginBottom: 1,
   },
   timeTextSelf: {
     color: colors.bubbleSentTime,

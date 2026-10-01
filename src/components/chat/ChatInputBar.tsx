@@ -43,6 +43,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   const [text, setText] = useState('');
   const [typingTimeout, setTypingTimeout] = useState<any>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -89,7 +90,6 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
     );
   }
 
-  const insets = useSafeAreaInsets();
   const bottomInset = isKeyboardVisible ? 4 : Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
   const canSubmit = (Boolean(text.trim()) || Boolean(selectedFile)) && !isUploading;
 

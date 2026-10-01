@@ -30,6 +30,7 @@ import {
   ShieldUserIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getDepartments,
@@ -274,54 +275,9 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
     }
   };
 
-  // Header Component with inside "+ Create Dept" button and search + status dropdown
+  // Header Component with search + status dropdown
   const renderHeader = () => (
     <View style={styles.listHeader}>
-      {/* ── Top Action Bar inside Screen: Title & "+ Create Dept" Button ── */}
-      <View style={styles.topActionBar}>
-        <View style={styles.topActionLeft}>
-          <Text style={styles.screenHeading}>Department Units</Text>
-          <Text style={styles.screenSubheading}>
-            {filteredDepartments.length} {filteredDepartments.length === 1 ? 'unit' : 'units'} found
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.createDeptBtn, shadows.md]}
-          onPress={() => {
-            setCreateName('');
-            setCreateDesc('');
-            setCreateStatus('ACTIVE');
-            setIsCreateModalOpen(true);
-          }}
-          activeOpacity={0.85}
-        >
-          {/* Linear Gradient Background - fills entire button with no clipping */}
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={StyleSheet.absoluteFill}
-          >
-            <Defs>
-              <LinearGradient id="createDeptBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
-                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100" height="100" fill="url(#createDeptBtnGrad)" />
-          </Svg>
-
-          <View style={styles.createDeptBtnInner}>
-            <View style={styles.createDeptIconCircle}>
-              <PlusIcon size={12} color={colors.buttonPrimary} />
-            </View>
-            <Text style={styles.createDeptBtnText}>Create Department</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
       {/* ── Search & Status Dropdown Row ── */}
       <View style={styles.searchFilterRow}>
         <View style={styles.searchBar}>
@@ -361,10 +317,10 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
           />
           <Text style={styles.dropdownTriggerText} numberOfLines={1}>
             {statusFilter === 'all'
-              ? 'All'
+              ? `All (${departments.length})`
               : statusFilter === 'ACTIVE'
-              ? 'Active'
-              : 'Inactive'}
+              ? `Active (${stats.active})`
+              : `Inactive (${stats.inactive})`}
           </Text>
           <ChevronDownIcon size={14} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -376,9 +332,44 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
     <View style={styles.container}>
       <AppHeader
         title="Department Master"
-        rightAction
+        titleAlign="left"
         showBack
         onBack={() => navigation.goBack()}
+        rightAction={
+          <TouchableOpacity
+            style={[styles.headerCreateDeptBtn, shadows.sm]}
+            onPress={() => {
+              setCreateName('');
+              setCreateDesc('');
+              setCreateStatus('ACTIVE');
+              setIsCreateModalOpen(true);
+            }}
+            activeOpacity={0.85}
+          >
+            <Svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              style={StyleSheet.absoluteFill}
+            >
+              <Defs>
+                <LinearGradient id="headerCreateDeptGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                  <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100" height="100" fill="url(#headerCreateDeptGrad)" />
+            </Svg>
+
+            <View style={styles.headerCreateDeptInner}>
+              <View style={styles.headerCreateDeptIconCircle}>
+                <PlusIcon size={10} color={colors.buttonPrimary} />
+              </View>
+              <Text style={styles.headerCreateDeptText}>Create Dept</Text>
+            </View>
+          </TouchableOpacity>
+        }
       />
 
       {loading ? (
@@ -410,17 +401,39 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
               <View style={[styles.deptCard, shadows.sm]}>
                 {/* ── Card Header: Avatar + Title + Status ── */}
                 <View style={styles.cardHeaderRow}>
-                  <View style={styles.avatarBox}>
-                    <Text style={styles.avatarText}>{initials}</Text>
+                  <View
+                    style={[
+                      styles.avatarBox,
+                      isActive ? styles.avatarBoxActive : styles.avatarBoxInactive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        isActive ? styles.avatarTextActive : styles.avatarTextInactive,
+                      ]}
+                    >
+                      {initials}
+                    </Text>
+                    <View
+                      style={[
+                        styles.avatarStatusBadge,
+                        { backgroundColor: isActive ? '#10b981' : '#94a3b8' },
+                      ]}
+                    />
                   </View>
 
                   <View style={styles.deptInfo}>
                     <Text style={styles.deptName} numberOfLines={1}>
                       {item.department_name}
                     </Text>
-                    {/* <View style={styles.deptIdBadge}>
-                      <Text style={styles.deptIdText}>ID: #{item.id}</Text>
-                    </View> */}
+                    {/* ── Created Date Row (Top Side) ── */}
+                    <View style={styles.dateRow}>
+                      <CalendarIcon size={11} color={colors.textLight} />
+                      <Text style={styles.dateText}>
+                        Created: {formatDate(item.created_at)}
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Status Toggle Badge */}
@@ -449,70 +462,62 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
                   </TouchableOpacity>
                 </View>
 
-                {/* ── Description ── */}
-                <Text style={styles.cardDesc} numberOfLines={4}>
+                {/* ── Card Body: Description ── */}
+                <Text style={styles.cardDesc} numberOfLines={3}>
                   {item.description || 'No description provided for this department unit.'}
                 </Text>
 
-                {/* ── Metrics Row: Assigned Users & Dept Admins ── */}
-                <View style={styles.metricsRow}>
-                  {/* Assigned Users button/chip */}
-                  <TouchableOpacity
-                    style={styles.metricChipBlue}
-                    onPress={() => openMembersModal(item)}
-                    activeOpacity={0.7}
-                  >
-                    <UsersIcon size={14} color={colors.primary} />
-                    <Text style={styles.metricChipTextBlue}>
-                      {item.member_count || 0} Members
-                    </Text>
-                  </TouchableOpacity>
+                {/* ── Card Divider ── */}
+                <View style={styles.cardDivider} />
 
-                  {/* Dept Admins chip */}
-                  <View style={styles.metricChipPurple}>
-                    <ShieldUserIcon size={14} color="#7c3aed" />
-                    <Text style={styles.metricChipTextPurple}>
-                      {item.admin_count || 0} Dept Admin{item.admin_count === 1 ? '' : 's'}
-                    </Text>
+                {/* ── Card Footer: Metrics & Actions ── */}
+                <View style={styles.cardFooterRow}>
+                  {/* Metrics Group */}
+                  <View style={styles.metricsGroup}>
+                    {/* Assigned Users button/chip (Tappable button affordance) */}
+                    <TouchableOpacity
+                      style={styles.metricChipBlue}
+                      onPress={() => openMembersModal(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.metricIconCircleBlue}>
+                        <UsersIcon size={12} color="#1d4ed8" />
+                      </View>
+                      <Text style={styles.metricChipTextBlue}>
+                        {item.member_count || 0} Members
+                      </Text>
+                      <ChevronRightIcon size={12} color="#2563eb" />
+                    </TouchableOpacity>
+
+                    {/* Dept Admins chip */}
+                    <View style={styles.metricChipPurple}>
+                      <View style={styles.metricIconCirclePurple}>
+                        <ShieldUserIcon size={12} color="#7c3aed" />
+                      </View>
+                      <Text style={styles.metricChipTextPurple}>
+                        {item.admin_count || 0} Dept Admin{item.admin_count === 1 ? '' : 's'}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                {/* ── Created Date Row ── */}
-                <View style={styles.dateRow}>
-                  <CalendarIcon size={13} color={colors.textLight} />
-                  <Text style={styles.dateText}>
-                    Created: {formatDate(item.created_at)}
-                  </Text>
-                </View>
+                  {/* Actions Group (Edit & Delete) */}
+                  <View style={styles.cardActionsGroup}>
+                    <TouchableOpacity
+                      style={styles.actionBtnEdit}
+                      onPress={() => openEditModal(item)}
+                      activeOpacity={0.7}
+                    >
+                      <EditIcon size={18} color="#334155" />
+                    </TouchableOpacity>
 
-                {/* ── Card Footer Actions: Members, Edit, Delete ── */}
-                <View style={styles.cardActionsRow}>
-                  <TouchableOpacity
-                    style={styles.actionBtnMembers}
-                    onPress={() => openMembersModal(item)}
-                    activeOpacity={0.7}
-                  >
-                    <UsersIcon size={14} color={colors.primary} />
-                    <Text style={styles.actionBtnMembersText}>Members</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionBtnEdit}
-                    onPress={() => openEditModal(item)}
-                    activeOpacity={0.7}
-                  >
-                    <EditIcon size={14} color={colors.primary} />
-                    <Text style={styles.actionBtnEditText}>Edit</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionBtnDelete}
-                    onPress={() => handleDeleteDepartment(item)}
-                    activeOpacity={0.7}
-                  >
-                    <TrashIcon size={15} color="#ef4444" />
-                    <Text style={styles.actionBtnDeleteText}>Delete</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionBtnDelete}
+                      onPress={() => handleDeleteDepartment(item)}
+                      activeOpacity={0.7}
+                    >
+                      <TrashIcon size={18} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             );
@@ -877,10 +882,27 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
                         isSelected && styles.dropdownOptionLabelActive,
                       ]}
                     >
-                      {opt.label} ({opt.count})
+                      {opt.label}
                     </Text>
                   </View>
-                  {isSelected && <CheckIcon size={16} color={colors.primary} />}
+                  <View style={styles.dropdownOptionRight}>
+                    <View
+                      style={[
+                        styles.dropdownCountBadge,
+                        isSelected && styles.dropdownCountBadgeActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dropdownCountText,
+                          isSelected && styles.dropdownCountTextActive,
+                        ]}
+                      >
+                        {opt.count}
+                      </Text>
+                    </View>
+                    {isSelected && <CheckIcon size={16} color={colors.primary} />}
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -916,6 +938,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
+  },
+
+  /* ── Header Create Dept Button in AppHeader ── */
+  headerCreateDeptBtn: {
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+    backgroundColor: colors.buttonPrimary,
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  headerCreateDeptInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  headerCreateDeptIconCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCreateDeptText: {
+    fontSize: 11.5,
+    fontWeight: fontWeights.bold,
+    color: '#ffffff',
+    letterSpacing: 0.2,
   },
 
   /* ── Inside Screen Top Action Bar ── */
@@ -1007,7 +1063,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     height: 42,
     minWidth: 105,
     gap: 6,
@@ -1018,9 +1074,9 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
 
   /* ── Dropdown Modal ── */
@@ -1069,17 +1125,43 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: fontWeights.bold,
   },
+  dropdownOptionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dropdownCountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  dropdownCountBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  dropdownCountText: {
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
+    color: colors.textMuted,
+  },
+  dropdownCountTextActive: {
+    color: colors.primary,
+  },
 
-
-  /* ── Department Card UI ── */
+  /* ── Department Card UI (Fluid & Elevated) ── */
   deptCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    padding: 16,
     marginHorizontal: spacing.lg,
-    marginVertical: 6,
+    marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e8edf3',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 3,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1088,29 +1170,64 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatarBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
+    position: 'relative',
+    borderWidth: 1.5,
+  },
+  avatarBoxActive: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#ffe4e6',
+  },
+  avatarBoxInactive: {
+    backgroundColor: '#f1f5f9',
+    borderColor: '#e2e8f0',
   },
   avatarText: {
-    color: '#ffffff',
-    fontSize: 13,
+    fontSize: 14.5,
     fontWeight: fontWeights.black,
     letterSpacing: 0.5,
+  },
+  avatarTextActive: {
+    color: colors.primary,
+  },
+  avatarTextInactive: {
+    color: '#64748b',
+  },
+  avatarStatusBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   deptInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   deptName: {
-    fontSize: fontSizes.base,
-    fontWeight: fontWeights.black,
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
+    fontSize: 16,
+    fontWeight: fontWeights.extrabold,
+    color: '#0f172a',
+    letterSpacing: -0.3,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2.5,
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 10.5,
+    color: colors.textMuted,
+    fontWeight: fontWeights.medium,
   },
   deptIdBadge: {
     alignSelf: 'flex-start',
@@ -1129,11 +1246,11 @@ const styles = StyleSheet.create({
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: borderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4.5,
+    borderRadius: 20,
     borderWidth: 1,
-    gap: 4,
+    gap: 5,
   },
   statusPillActive: {
     backgroundColor: '#ecfdf5',
@@ -1141,7 +1258,7 @@ const styles = StyleSheet.create({
   },
   statusPillInactive: {
     backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    borderColor: '#cbd5e1',
   },
   statusPulseDot: {
     width: 6,
@@ -1150,131 +1267,112 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontSize: 10,
-    fontWeight: fontWeights.black,
+    fontWeight: fontWeights.extrabold,
     letterSpacing: 0.4,
   },
   cardDesc: {
-    fontSize: fontSizes.xs,
-    color: colors.textMuted,
-    lineHeight: 18,
-    marginBottom: spacing.md,
+    fontSize: 12.5,
+    color: '#64748b',
+    lineHeight: 18.5,
+    marginTop: 10,
+    marginBottom: 12,
+    paddingHorizontal: 1,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginBottom: 11,
   },
 
-  /* ── Metrics Row ── */
-  metricsRow: {
+  /* ── Card Footer Row ── */
+  cardFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  metricsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    flex: 1,
   },
   metricChipBlue: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primarySubtle,
-    paddingHorizontal: spacing.sm,
+    backgroundColor: '#eff6ff',
+    paddingLeft: 6,
+    paddingRight: 8,
     paddingVertical: 5,
-    borderRadius: borderRadius.md,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.primaryMuted,
-    gap: 4,
+    borderColor: '#bfdbfe',
+    gap: 5,
+  },
+  metricIconCircleBlue: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metricChipTextBlue: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: colors.primary,
+    color: '#1d4ed8',
   },
   metricChipPurple: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f3ff',
-    paddingHorizontal: spacing.sm,
+    backgroundColor: '#faf5ff',
+    paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: borderRadius.md,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#ede9fe',
-    gap: 4,
+    gap: 5,
+  },
+  metricIconCirclePurple: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ede9fe',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metricChipTextPurple: {
     fontSize: 11,
     fontWeight: fontWeights.bold,
-    color: '#6d28d9',
+    color: '#7c3aed',
   },
 
-  /* ── Date Row ── */
-  dateRow: {
+  /* ── Actions Group (Edit, Delete) ── */
+  cardActionsGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    marginBottom: spacing.sm,
-    gap: 4,
-  },
-  dateText: {
-    fontSize: 10.5,
-    color: colors.textLight,
-    fontWeight: fontWeights.medium,
-  },
-
-  /* ── Card Actions Row ── */
-  cardActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-    gap: spacing.sm,
-  },
-  actionBtnMembers: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySubtle,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.primaryMuted,
-    gap: 4,
-  },
-  actionBtnMembersText: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-    color: colors.primary,
+    gap: 6,
   },
   actionBtnEdit: {
-    flex: 1,
-    flexDirection: 'row',
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySubtle,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    backgroundColor: '#f8fafc',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.primaryMuted,
-    gap: 4,
-  },
-  actionBtnEditText: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-    color: colors.primary,
+    borderColor: '#e2e8f0',
   },
   actionBtnDelete: {
-    flexDirection: 'row',
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fef2f2',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#fecaca',
-    gap: 3,
-  },
-  actionBtnDeleteText: {
-    fontSize: 11,
-    fontWeight: fontWeights.bold,
-    color: '#ef4444',
+    borderColor: '#fee2e2',
   },
 
   /* ── Empty State ── */

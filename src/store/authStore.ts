@@ -34,6 +34,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   permissions: UserPermissions;
+  loginSuccessNotice: string | null;
+  setLoginSuccessNotice: (msg: string | null) => void;
   initialize: () => Promise<void>;
   login: (user: User, token: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -82,6 +84,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   permissions: defaultPermissions,
+  loginSuccessNotice: null,
+  setLoginSuccessNotice: (msg) => set({ loginSuccessNotice: msg }),
 
   initialize: async () => {
     try {

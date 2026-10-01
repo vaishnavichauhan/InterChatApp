@@ -1,4 +1,4 @@
-import Svg, { Path, Circle, Rect, Polyline, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Polyline, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -87,6 +87,14 @@ export const CameraIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
     <Circle cx={12} cy={13} r={3} />
+  </Svg>
+);
+
+export const ImageIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
+    <Circle cx={9} cy={9} r={2} />
+    <Path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
   </Svg>
 );
 
@@ -190,6 +198,12 @@ export const MobileIcon: React.FC<IconProps> = ({ size = 20, color = '#f59e0b' }
 export const ChevronDownIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
     <Path d="m6 9 6 6 6-6" />
+  </Svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="m9 18 6-6-6-6" />
   </Svg>
 );
 
@@ -336,6 +350,90 @@ export const CloseIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' })
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Line x1={18} y1={6} x2={6} y2={18} />
     <Line x1={6} y1={6} x2={18} y2={18} />
+  </Svg>
+);
+
+export const ColorfulCameraIcon: React.FC<{ size?: number }> = ({ size = 56 }) => (
+  <Svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <Defs>
+      <LinearGradient id="camBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#FB7185" />
+        <Stop offset="100%" stopColor="#E11D48" />
+      </LinearGradient>
+      <LinearGradient id="camLensGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#334155" />
+        <Stop offset="100%" stopColor="#0F172A" />
+      </LinearGradient>
+      <LinearGradient id="camGlassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#38BDF8" />
+        <Stop offset="100%" stopColor="#0284C7" />
+      </LinearGradient>
+    </Defs>
+    <Circle cx="28" cy="28" r="28" fill="url(#camBgGrad)" />
+    <Path
+      d="M37 20h-3.2l-1.4-2.4c-.4-.6-1-.9-1.7-.9h-5.4c-.7 0-1.3.3-1.7.9L22.2 20H19c-2.2 0-4 1.8-4 4v12c0 2.2 1.8 4 4 4h18c2.2 0 4-1.8 4-4V24c0-2.2-1.8-4-4-4z"
+      fill="#FFFFFF"
+    />
+    <Circle cx="28" cy="29" r="6.5" fill="url(#camLensGrad)" />
+    <Circle cx="28" cy="29" r="4.2" fill="url(#camGlassGrad)" />
+    <Circle cx="26.5" cy="27.5" r="1.3" fill="#FFFFFF" opacity="0.9" />
+    <Circle cx="35.5" cy="23.5" r="1.2" fill="#FDA4AF" />
+  </Svg>
+);
+
+export const ColorfulPhotoIcon: React.FC<{ size?: number }> = ({ size = 56 }) => (
+  <Svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <Defs>
+      <LinearGradient id="photoBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#A855F7" />
+        <Stop offset="100%" stopColor="#6D28D9" />
+      </LinearGradient>
+      <LinearGradient id="photoSkyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <Stop offset="0%" stopColor="#67E8F9" />
+        <Stop offset="100%" stopColor="#0284C7" />
+      </LinearGradient>
+      <LinearGradient id="photoMtnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#10B981" />
+        <Stop offset="100%" stopColor="#047857" />
+      </LinearGradient>
+      <LinearGradient id="photoMtn2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#34D399" />
+        <Stop offset="100%" stopColor="#059669" />
+      </LinearGradient>
+    </Defs>
+    <Circle cx="28" cy="28" r="28" fill="url(#photoBgGrad)" />
+    <Rect x="15" y="16" width="26" height="24" rx="4" fill="#FFFFFF" />
+    <Rect x="17" y="18" width="22" height="17" rx="2.5" fill="url(#photoSkyGrad)" />
+    <Circle cx="22" cy="22" r="2.5" fill="#FBBF24" />
+    <Path d="M17 33l5-6.5c.6-.8 1.8-.8 2.4 0l2.6 3.5 3-4c.6-.8 1.8-.8 2.4 0l6.6 8.5H17z" fill="url(#photoMtnGrad)" />
+    <Path d="M25 34l3.5-4.5c.5-.7 1.5-.7 2 0l8.5 11H25z" fill="url(#photoMtn2Grad)" opacity="0.8" />
+  </Svg>
+);
+
+export const ColorfulDocumentIcon: React.FC<{ size?: number }> = ({ size = 56 }) => (
+  <Svg width={size} height={size} viewBox="0 0 56 56" fill="none">
+    <Defs>
+      <LinearGradient id="docBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#60A5FA" />
+        <Stop offset="100%" stopColor="#1D4ED8" />
+      </LinearGradient>
+      <LinearGradient id="docFoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#BFDBFE" />
+        <Stop offset="100%" stopColor="#60A5FA" />
+      </LinearGradient>
+    </Defs>
+    <Circle cx="28" cy="28" r="28" fill="url(#docBgGrad)" />
+    <Path
+      d="M19 15h11l9 9v16c0 1.66-1.34 3-3 3H19c-1.66 0-3-1.34-3-3V18c0-1.66 1.34-3 3-3z"
+      fill="#FFFFFF"
+    />
+    <Path
+      d="M30 15v6c0 1.66 1.34 3 3 3h6L30 15z"
+      fill="url(#docFoldGrad)"
+    />
+    <Rect x="21" y="27" width="14" height="2.2" rx="1.1" fill="#93C5FD" />
+    <Rect x="21" y="32" width="14" height="2.2" rx="1.1" fill="#3B82F6" />
+    <Rect x="21" y="37" width="9" height="2.2" rx="1.1" fill="#60A5FA" />
   </Svg>
 );
 

@@ -96,17 +96,17 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
   },
   content: {
     flex: 1,
     marginLeft: spacing.md,
     justifyContent: 'center',
     minWidth: 0,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   topRow: {
     flexDirection: 'row',

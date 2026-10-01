@@ -146,7 +146,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (err) {
-      console.error('Failed to load conversations:', err);
+      console.warn('Failed to load conversations:', err);
       set({ isLoadingConversations: false });
     }
   },
@@ -193,7 +193,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isLoadingMessages: false,
       });
     } catch (err) {
-      console.error('Failed to load messages for conversation:', conversationId, err);
+      console.warn('Failed to load messages for conversation:', conversationId, err);
       set({ isLoadingMessages: false });
     }
   },

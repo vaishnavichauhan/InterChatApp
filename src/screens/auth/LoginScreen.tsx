@@ -20,6 +20,8 @@ import {
   LockIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
+  AlertCircleIcon,
+  CheckIcon,
 } from '../../components/icons/SvgIcons';
 import { loginUser } from '../../api/authApi';
 import { getDeviceId } from '../../utils/device';
@@ -33,14 +35,21 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const login = useAuthStore((state) => state.login);
+  const setLoginSuccessNotice = useAuthStore((state) => state.setLoginSuccessNotice);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleLogin = async () => {
+    // Clear previous feedback
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
     if (!username.trim() || !password.trim()) {
-      Alert.alert('Required', 'Please enter both your username and password.');
+      setErrorMessage('Please enter both your username and password.');
       return;
     }
 
@@ -68,15 +77,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           return;
         }
 
-        Alert.alert('Login Failed', response.data.message || 'Invalid credentials');
+        setErrorMessage(response.data.message || 'Invalid username or password.');
         return;
       }
 
       const { user, token } = response.data;
-      await login(user, token);
+      setSuccessMessage('Sign in successfully');
+      setLoginSuccessNotice('Sign in successfully');
+
+      // Brief smooth transition before navigating to main screen
+      setTimeout(async () => {
+        await login(user, token);
+      }, 500);
     } catch (error: any) {
       const msg = error.response?.data?.message || 'Unable to connect to the server.';
-      Alert.alert('Error', msg);
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -130,14 +145,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Text style={styles.formTitle}>Welcome Back</Text>
             </View>
             <Text style={styles.formSubtitle}>
-              Enter your enterprise credentials to access your channels and chat messages.
+              Enter your credentials to access your Chats and Groups messages.
             </Text>
 
             <AppInput
               label="Username"
               placeholder="Write your username"
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               leftIcon={<UserIcon size={18} color={colors.primary} />}
               autoCapitalize="none"
             />
@@ -146,31 +164,72 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               label="Password"
               placeholder="Write your password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               isPassword
               leftIcon={<LockIcon size={18} color={colors.primary} />}
             />
 
+            {/* Error Message banner above Sign In button */}
+            {errorMessage ? (
+              <View style={styles.errorBox}>
+                <View style={styles.errorIconWrap}>
+                  <AlertCircleIcon size={16} color="#DC2626" />
+                </View>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {/* Success Message banner above Sign In button */}
+            {successMessage ? (
+              <View style={styles.successBox}>
+                <View style={styles.successIconWrap}>
+                  <CheckIcon size={14} color="#15803D" />
+                </View>
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.submitWrapper}>
               <TouchableOpacity
-                style={[styles.signInButton, shadows.lg]}
+                style={[
+                  styles.signInButton,
+                  shadows.lg,
+                  (loading || !!successMessage) && { opacity: 0.92 },
+                ]}
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={loading || !!successMessage}
                 activeOpacity={0.88}
               >
                 {/* SVG Gradient inside the pill button matching WelcomeScreen */}
                 <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
                   <Defs>
                     <LinearGradient id="loginBtnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <Stop offset="0%" stopColor={colors.buttonGradientStart} />
-                      <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+                      <Stop
+                        offset="0%"
+                        stopColor={successMessage ? '#16A34A' : colors.buttonGradientStart}
+                      />
+                      <Stop
+                        offset="100%"
+                        stopColor={successMessage ? '#15803D' : colors.buttonGradientEnd}
+                      />
                     </LinearGradient>
                   </Defs>
                   <Rect width="100%" height="100%" rx={28} fill="url(#loginBtnGrad)" />
                 </Svg>
 
                 {loading ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <View style={styles.buttonInnerContent}>
+                    <ActivityIndicator size="small" color="#ffffff" />
+                    <Text style={styles.signInButtonText}>Signing In...</Text>
+                  </View>
+                ) : successMessage ? (
+                  <View style={styles.buttonInnerContent}>
+                    <CheckIcon size={18} color="#ffffff" />
+                    <Text style={styles.signInButtonText}>Signed In!</Text>
+                  </View>
                 ) : (
                   <View style={styles.buttonInnerContent}>
                     <Text style={styles.signInButtonText}>Sign In</Text>
@@ -228,13 +287,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 22,
+    // backgroundColor: '#ffffff',
+    // borderRadius: 22,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    // borderWidth: 0.4,
+    // borderColor: '#e8e8e8',
   },
   formTitleRow: {
     flexDirection: 'row',
@@ -290,5 +349,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: spacing.md,
+    gap: 8,
+  },
+  errorIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#DC2626',
+    fontWeight: fontWeights.medium,
+  },
+  successBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: spacing.md,
+    gap: 8,
+  },
+  successIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#15803D',
+    fontWeight: fontWeights.semibold,
+  },
 });
+
 
