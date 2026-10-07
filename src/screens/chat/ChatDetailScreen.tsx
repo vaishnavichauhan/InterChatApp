@@ -16,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { AppAvatar } from '../../components/common/AppAvatar';
-import { ArrowLeftIcon, TrashIcon } from '../../components/icons/SvgIcons';
+import { ArrowLeftIcon, TrashIcon, PhoneIcon, VideoIcon } from '../../components/icons/SvgIcons';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { ChatInputBar } from '../../components/chat/ChatInputBar';
 import { AttachmentPickerModal } from '../../components/chat/AttachmentPickerModal';
@@ -25,6 +25,7 @@ import { useChatStore, ChatMessage } from '../../store/chatStore';
 import { useAuthStore, isUserAdminRole } from '../../store/authStore';
 import { uploadChatAttachment, deleteGroupChat, deleteMessage, FileUploadAsset } from '../../api/chatApi';
 import { getSocket } from '../../utils/socket';
+import { useCall } from '../../context/CallContext';
 
 interface ChatDetailScreenProps {
   navigation: any;
@@ -39,6 +40,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
   const user = useAuthStore((state) => state.user);
   const permissions = useAuthStore((state) => state.permissions);
   const isAdmin = isUserAdminRole(user);
+  const { startCall, callStatus, endCall, cleanupCall } = useCall();
 
   const {
     activeConversation,
@@ -183,6 +185,96 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
 
   const hasWriteAccess = permissions.canChat && hasGroupWriteAccess;
 
+  const initiateVoiceCall = () => {
+    if (!pId) {
+      Alert.alert('Cannot Start Call', 'User details could not be found for this contact.');
+      return;
+    }
+    startCall({
+      toUserId: pId,
+      peerInfo: {
+        name: title,
+        avatar:
+          (activeConversation as any)?.profile_photo ||
+          (activeConversation as any)?.avatar ||
+          (matchedConv as any)?.profile_photo ||
+          (matchedConv as any)?.avatar ||
+          '',
+      },
+      type: 'audio',
+    });
+  };
+
+  const handleStartVoiceCall = () => {
+    if (callStatus === 'CALLING' || callStatus === 'CONNECTING' || callStatus === 'CONNECTED') {
+      Alert.alert(
+        'Call in Progress',
+        'You have an ongoing call session. Would you like to end it and start this call?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'End & Call',
+            style: 'destructive',
+            onPress: () => {
+              endCall(true);
+              setTimeout(() => {
+                cleanupCall();
+                initiateVoiceCall();
+              }, 400);
+            },
+          },
+        ]
+      );
+      return;
+    }
+    initiateVoiceCall();
+  };
+
+  const initiateVideoCall = () => {
+    if (!pId) {
+      Alert.alert('Cannot Start Call', 'User details could not be found for this contact.');
+      return;
+    }
+    startCall({
+      toUserId: pId,
+      peerInfo: {
+        name: title,
+        avatar:
+          (activeConversation as any)?.profile_photo ||
+          (activeConversation as any)?.avatar ||
+          (matchedConv as any)?.profile_photo ||
+          (matchedConv as any)?.avatar ||
+          '',
+      },
+      type: 'video',
+    });
+  };
+
+  const handleStartVideoCall = () => {
+    if (callStatus === 'CALLING' || callStatus === 'CONNECTING' || callStatus === 'CONNECTED') {
+      Alert.alert(
+        'Call in Progress',
+        'You have an ongoing call session. Would you like to end it and start this call?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'End & Call',
+            style: 'destructive',
+            onPress: () => {
+              endCall(true);
+              setTimeout(() => {
+                cleanupCall();
+                initiateVideoCall();
+              }, 400);
+            },
+          },
+        ]
+      );
+      return;
+    }
+    initiateVideoCall();
+  };
+
   const handleSend = async (text: string, file: FileUploadAsset | null) => {
     let attachmentId: number | null = null;
 
@@ -212,6 +304,14 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
     }
   };
 
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      (navigation as any).navigate('MainTabs');
+    }
+  };
+
   const handleDeleteGroup = () => {
     Alert.alert(
       'Delete Group',
@@ -225,7 +325,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
             try {
               await deleteGroupChat(activeConversation.id);
               await loadConversations(false);
-              navigation.goBack();
+              handleGoBack();
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Failed to delete group.');
             }
@@ -331,7 +431,7 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => navigation.goBack()}
+            onPress={handleGoBack}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -361,15 +461,53 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
           </View>
         </View>
 
-        {isGroup && !isActivity && isGroupAdmin && (
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={handleDeleteGroup}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <TrashIcon size={18} color={colors.danger} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerRight}>
+          {!isGroup && Boolean(pId) && !isActivity && !isMaster && (
+            <>
+              {/* Voice Call Button */}
+              <TouchableOpacity
+                style={[
+                  styles.callBtn,
+                  isOnline ? styles.callBtnVoiceActive : styles.callBtnOffline,
+                ]}
+                onPress={handleStartVoiceCall}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
+              >
+                <PhoneIcon
+                  size={17}
+                  color={isOnline ? '#059669' : colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              {/* Video Call Button */}
+              <TouchableOpacity
+                style={[
+                  styles.callBtn,
+                  isOnline ? styles.callBtnVideoActive : styles.callBtnOffline,
+                ]}
+                onPress={handleStartVideoCall}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
+              >
+                <VideoIcon
+                  size={17}
+                  color={isOnline ? '#2563EB' : colors.textMuted}
+                />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {isGroup && !isActivity && isGroupAdmin && (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={handleDeleteGroup}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <TrashIcon size={18} color={colors.danger} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Messages Thread */}
@@ -500,6 +638,38 @@ const styles = StyleSheet.create({
   headerSubtitleOnline: {
     color: colors.success,
     fontWeight: fontWeights.semibold,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    zIndex: 10,
+    elevation: 10,
+  },
+  callBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    zIndex: 20,
+    elevation: 20,
+  },
+  callBtnVoiceActive: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  callBtnVideoActive: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  callBtnOffline: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.borderLight,
+  },
+  callBtnDisabled: {
+    opacity: 0.5,
   },
   deleteBtn: {
     width: 36,

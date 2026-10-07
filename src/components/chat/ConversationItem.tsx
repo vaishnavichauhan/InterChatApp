@@ -67,19 +67,32 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
         </View>
 
         <View style={styles.bottomRow}>
-          <Text
-            style={[
-              styles.messageSnippet,
-              unreadCount > 0 && styles.messageSnippetUnread,
-            ]}
-            numberOfLines={1}
-          >
-            {conversation.last_message || conversation.last_message_text || (
-              <Text style={styles.emptySnippet}>
-                {isActivity ? 'Company activity & updates' : 'No messages yet'}
+          {(() => {
+            const rawSnippet = (conversation.last_message || conversation.last_message_text || '').trim();
+            let displaySnippet = rawSnippet;
+            if (rawSnippet.startsWith('{"type":"call_log"')) {
+              try {
+                const parsed = JSON.parse(rawSnippet);
+                displaySnippet = parsed.text || 'Call';
+              } catch {}
+            }
+
+            return (
+              <Text
+                style={[
+                  styles.messageSnippet,
+                  unreadCount > 0 && styles.messageSnippetUnread,
+                ]}
+                numberOfLines={1}
+              >
+                {displaySnippet || (
+                  <Text style={styles.emptySnippet}>
+                    {isActivity ? 'Company activity & updates' : 'No messages yet'}
+                  </Text>
+                )}
               </Text>
-            )}
-          </Text>
+            );
+          })()}
 
           {unreadCount > 0 && (
             <View style={[styles.unreadBadge, isActivity && styles.unreadBadgeActivity]}>

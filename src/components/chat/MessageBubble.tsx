@@ -2,10 +2,25 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Alert, Platform } from 'react-native';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
 import { formatMessageTime, formatFileSize, getFileCategory } from '../../utils/formatters';
-import { FileIcon, CameraIcon, DownloadIcon, LockIcon, EyeIcon, TrashIcon, ReplyIcon, BanIcon } from '../icons/SvgIcons';
+import {
+  FileIcon,
+  CameraIcon,
+  DownloadIcon,
+  LockIcon,
+  EyeIcon,
+  TrashIcon,
+  ReplyIcon,
+  BanIcon,
+  PhoneIcon,
+  VideoIcon,
+  PhoneIncomingIcon,
+  PhoneOutgoingIcon,
+  PhoneMissedIcon,
+} from '../icons/SvgIcons';
 import { ChatMessage } from '../../store/chatStore';
 import { resolveFileUrl } from '../../config/api';
 import { useAuthStore, isDeviceDownloadAllowed, isUserAdminRole } from '../../store/authStore';
+import { useCall } from '../../context/CallContext';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -15,6 +30,152 @@ interface MessageBubbleProps {
   onReply?: (message: ChatMessage) => void;
   onDelete?: (message: ChatMessage) => void;
 }
+
+const CallLogBubble: React.FC<{
+  message: ChatMessage;
+  isSelf: boolean;
+}> = ({ message, isSelf }) => {
+  const user = useAuthStore((state) => state.user);
+  const { startCall } = useCall();
+
+  let callData: any = null;
+  try {
+    const rawContent = (message as any).content || message.message_text;
+    if (typeof rawContent === 'string' && rawContent.startsWith('{')) {
+      callData = JSON.parse(rawContent);
+    }
+  } catch {}
+
+  const callerId = callData?.callerId || message.sender_id;
+  const isCaller = Number(callerId) === Number(user?.id);
+  const status = callData?.status || 'completed';
+  const callType = (callData?.callType || 'audio').toLowerCase() as 'audio' | 'video';
+  const duration = parseInt(callData?.duration, 10) || 0;
+  const isVideo = callType === 'video';
+
+  const formatCallDur = (s: number) => {
+    if (!s || s <= 0) return '';
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+    return `${pad(m)}:${pad(sec)}`;
+  };
+
+  let title = '';
+  let subtitle = '';
+  let iconColor = '#10b981';
+  let badgeBg = '#ecfdf5';
+  let isMissed = false;
+
+  if (status === 'completed') {
+    if (isCaller) {
+      title = isVideo ? 'Outgoing Video Call' : 'Outgoing Voice Call';
+      subtitle = formatCallDur(duration) ? `Duration: ${formatCallDur(duration)}` : 'Answered';
+      iconColor = '#10b981';
+      badgeBg = '#ecfdf5';
+    } else {
+      title = isVideo ? 'Incoming Video Call' : 'Incoming Voice Call';
+      subtitle = formatCallDur(duration) ? `Duration: ${formatCallDur(duration)}` : 'Answered';
+      iconColor = '#10b981';
+      badgeBg = '#ecfdf5';
+    }
+  } else if (status === 'declined') {
+    title = isVideo ? 'Declined Video Call' : 'Declined Voice Call';
+    subtitle = isCaller ? 'Call declined' : 'Declined';
+    iconColor = '#ef4444';
+    badgeBg = '#fef2f2';
+    isMissed = true;
+  } else {
+    // missed / busy / cancelled
+    if (!isCaller) {
+      title = isVideo ? 'Missed Video Call' : 'Missed Voice Call';
+      subtitle = 'Missed call';
+      iconColor = '#ef4444';
+      badgeBg = '#fef2f2';
+      isMissed = true;
+    } else {
+      title = isVideo ? 'Cancelled Video Call' : 'Cancelled Voice Call';
+      subtitle = 'No answer';
+      iconColor = '#64748b';
+      badgeBg = '#f1f5f9';
+    }
+  }
+
+  const partnerTargetId = isCaller ? callData?.receiverId : callerId;
+
+  const handleCallBack = () => {
+    if (partnerTargetId) {
+      startCall({
+        toUserId: partnerTargetId,
+        peerInfo: {
+          name: message.sender_name || message.sender_username || 'User',
+        },
+        type: isVideo ? 'video' : 'audio',
+      });
+    }
+  };
+
+  return (
+    <View style={[styles.container, isSelf ? styles.containerSelf : styles.containerOther]}>
+      <View
+        style={[
+          styles.callLogCard,
+          isSelf ? styles.callLogCardSelf : styles.callLogCardOther,
+          isMissed && styles.callLogCardMissed,
+        ]}
+      >
+        <View style={styles.callMainRow}>
+          {/* Left: Call Icon Badge */}
+          <View style={[styles.callIconBadge, { backgroundColor: badgeBg }]}>
+            {isMissed ? (
+              <PhoneMissedIcon size={20} color={iconColor} />
+            ) : isCaller ? (
+              <PhoneOutgoingIcon size={20} color={iconColor} />
+            ) : (
+              <PhoneIncomingIcon size={20} color={iconColor} />
+            )}
+          </View>
+
+          {/* Center: Title & Duration / Status */}
+          <View style={styles.callDetails}>
+            <Text style={[styles.callTitle, isMissed && styles.callTitleMissed]} numberOfLines={1}>
+              {title}
+            </Text>
+
+            {Boolean(subtitle) && (
+              <Text style={[styles.callSubtitle, isMissed && styles.callSubtitleMissed]}>
+                {subtitle}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Right Corner: Timestamp */}
+        <View style={styles.callTimeRow}>
+          <Text style={styles.callTimeText}>
+            {formatMessageTime(message.created_at)}
+          </Text>
+        </View>
+
+        {/* Right: Quick Call Back Button */}
+        {/* {Boolean(partnerTargetId) && (
+          <TouchableOpacity
+            style={[styles.callActionBtn, isMissed && styles.callActionBtnMissed]}
+            onPress={handleCallBack}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            {isVideo ? (
+              <VideoIcon size={16} color={isMissed ? '#ef4444' : '#10b981'} />
+            ) : (
+              <PhoneIcon size={16} color={isMissed ? '#ef4444' : '#10b981'} />
+            )}
+          </TouchableOpacity>
+        )} */}
+      </View>
+    </View>
+  );
+};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
@@ -29,6 +190,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const user = useAuthStore((state) => state.user);
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // If this is a call log, delegate to CallLogBubble
+  if (message.message_type === 'CALL') {
+    return <CallLogBubble message={message} isSelf={isSelf} />;
+  }
 
   const isAdmin = isUserAdminRole(user);
   const canDelete = Boolean(user);
@@ -698,5 +864,90 @@ const styles = StyleSheet.create({
   },
   timeTextOther: {
     color: colors.bubbleReceivedTime,
+  },
+
+  /* ── Call Log Message Styles ── */
+  callLogCard: {
+    paddingTop: 10,
+    paddingBottom: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    minWidth: 200,
+    maxWidth: 270,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  callLogCardSelf: {
+    borderBottomRightRadius: 4,
+  },
+  callLogCardOther: {
+    borderBottomLeftRadius: 4,
+  },
+  callLogCardMissed: {
+    borderColor: '#fee2e2',
+  },
+  callMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  callIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callDetails: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  callTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 2,
+  },
+  callTitleMissed: {
+    color: '#ef4444',
+  },
+  callSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  callSubtitleMissed: {
+    color: '#f87171',
+  },
+  callTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  callTimeText: {
+    fontSize: 10,
+    fontWeight: fontWeights.medium,
+    color: '#94a3b8',
+  },
+  callActionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  callActionBtnMissed: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
   },
 });

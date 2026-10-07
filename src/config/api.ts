@@ -1,23 +1,15 @@
-// ── Local Development URL (Commented Out) ──────────────────────────────────
-// const CUSTOM_HOST_IP: string | null = '192.168.1.14';
+
+//-local run URl---------------------------------
+
 // const PORT = 5005;
-// const getHost = () => {
-//   if (CUSTOM_HOST_IP) {
-//     return CUSTOM_HOST_IP;
-//   }
-//   if (Platform.OS === 'android') {
-//     return '10.0.2.2';
-//   }
-//   return 'localhost';
-// };
-// export const HOST = getHost();
-// export const BASE_SERVER_URL = `http://${HOST}:${PORT}`;
-// export const API_BASE_URL = `${BASE_SERVER_URL}/api`;
-// export const SOCKET_URL = BASE_SERVER_URL;
+// export const HOST = `192.168.1.14:${PORT}`; //10.0.2.2:
+// export const BASE_SERVER_URL = `http://${HOST}`;
 
 // ── Live Production URL ───────────────────────────────────────────────────
 export const HOST = 'interchat.epoxyhouse.in';
 export const BASE_SERVER_URL = `https://${HOST}`;
+
+///
 export const API_BASE_URL = `${BASE_SERVER_URL}/api`; // https://interchat.epoxyhouse.in/api
 export const SOCKET_URL = BASE_SERVER_URL;
 

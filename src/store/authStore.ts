@@ -13,6 +13,8 @@ export interface User {
   user_type_id?: number;
   user_type_name?: string;
   mob_no?: string | null;
+  profile_photo?: string | null;
+  avatar?: string | null;
   departments?: Array<{ department_id: number; department_name: string }>;
   department_ids?: number[];
   device_allow_download?: boolean;

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
@@ -20,6 +20,10 @@ import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme'
 import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { ToastBanner } from '../components/common/ToastBanner';
+import { CallProvider } from '../context/CallContext';
+import { IncomingCallModal } from '../components/call/IncomingCallModal';
+import { ActiveCallModal } from '../components/call/ActiveCallModal';
+import { MinimizedCallBar } from '../components/call/MinimizedCallBar';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -47,42 +51,51 @@ export const RootNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
-      <View style={styles.rootContainer}>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-          {!isAuthenticated ? (
-            <Stack.Screen name="Auth" component={AuthStack} />
-          ) : (
+    <CallProvider>
+      <NavigationContainer>
+        <View style={styles.rootContainer}>
+          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+            {!isAuthenticated ? (
+              <Stack.Screen name="Auth" component={AuthStack} />
+            ) : (
+              <>
+                <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+                <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+                <Stack.Screen
+                  name="NewChat"
+                  component={NewChatScreen}
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="CreateGroup"
+                  component={CreateGroupScreen}
+                  options={{ presentation: 'modal' }}
+                />
+                <Stack.Screen
+                  name="FileViewer"
+                  component={FileViewerScreen}
+                  options={{ presentation: 'fullScreenModal' }}
+                />
+                <Stack.Screen name="UserMaster" component={UserMasterScreen} />
+                <Stack.Screen name="CreateUser" component={CreateUserScreen} />
+                <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
+                <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
+                <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+          {isAuthenticated && <WatermarkOverlay />}
+          <ToastBanner />
+          {isAuthenticated && (
             <>
-              <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-              <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
-              <Stack.Screen
-                name="NewChat"
-                component={NewChatScreen}
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="CreateGroup"
-                component={CreateGroupScreen}
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen
-                name="FileViewer"
-                component={FileViewerScreen}
-                options={{ presentation: 'fullScreenModal' }}
-              />
-              <Stack.Screen name="UserMaster" component={UserMasterScreen} />
-              <Stack.Screen name="CreateUser" component={CreateUserScreen} />
-              <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
-              <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
-              <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
+              <IncomingCallModal />
+              <ActiveCallModal />
+              <MinimizedCallBar />
             </>
           )}
-        </Stack.Navigator>
-        {isAuthenticated && <WatermarkOverlay />}
-        <ToastBanner />
-      </View>
-    </NavigationContainer>
+        </View>
+      </NavigationContainer>
+    </CallProvider>
   );
 };
 

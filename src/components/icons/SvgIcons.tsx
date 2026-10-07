@@ -1,4 +1,4 @@
-import Svg, { Path, Circle, Rect, Polyline, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Polyline, Line, Defs, LinearGradient, Stop, Polygon } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -443,4 +443,111 @@ export const ColorfulDocumentIcon: React.FC<{ size?: number }> = ({ size = 56 })
     <Rect x="21" y="37" width="9" height="2.2" rx="1.1" fill="#60A5FA" />
   </Svg>
 );
+
+export const VideoIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polygon points="23 7 16 12 23 17 23 7" />
+    <Rect x={1} y={5} width={15} height={14} rx={2} ry={2} />
+  </Svg>
+);
+
+export const VideoOffIcon: React.FC<IconProps> = ({ size = 20, color = '#ef4444' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m4 0h5a2 2 0 0 1 2 2v3l7-5v14l-4.14-2.96" />
+    <Line x1={1} y1={1} x2={23} y2={23} />
+  </Svg>
+);
+
+export const PhoneOffIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91" />
+    <Line x1={1} y1={1} x2={23} y2={23} />
+  </Svg>
+);
+
+export const MicIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+    <Path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+    <Line x1={12} y1={19} x2={12} y2={23} />
+    <Line x1={8} y1={23} x2={16} y2={23} />
+  </Svg>
+);
+
+export const MicOffIcon: React.FC<IconProps> = ({ size = 20, color = '#ef4444' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Line x1={1} y1={1} x2={23} y2={23} />
+    <Path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+    <Path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+    <Line x1={12} y1={19} x2={12} y2={23} />
+    <Line x1={8} y1={23} x2={16} y2={23} />
+  </Svg>
+);
+
+export const SwitchCameraIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4" />
+    <Polyline points="7 10 12 15 17 10" />
+    <Line x1={12} y1={15} x2={12} y2={3} />
+  </Svg>
+);
+
+export const VolumeUpIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    <Path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+  </Svg>
+);
+
+export const VolumeOffIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+    <Line x1={23} y1={9} x2={17} y2={15} />
+    <Line x1={17} y1={9} x2={23} y2={15} />
+  </Svg>
+);
+
+export const MinimizeIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="4 14 10 14 10 20" />
+    <Polyline points="20 10 14 10 14 4" />
+    <Line x1={14} y1={10} x2={21} y2={3} />
+    <Line x1={3} y1={21} x2={10} y2={14} />
+  </Svg>
+);
+
+export const MaximizeIcon: React.FC<IconProps> = ({ size = 20, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="15 3 21 3 21 9" />
+    <Polyline points="9 21 3 21 3 15" />
+    <Line x1={21} y1={3} x2={14} y2={10} />
+    <Line x1={3} y1={21} x2={10} y2={14} />
+  </Svg>
+);
+
+export const PhoneIncomingIcon: React.FC<IconProps> = ({ size = 20, color = '#10b981' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="16 2 16 8 22 8" />
+    <Line x1="23" y1="1" x2="16" y2="8" />
+    <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </Svg>
+);
+
+export const PhoneOutgoingIcon: React.FC<IconProps> = ({ size = 20, color = '#10b981' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Polyline points="23 7 23 1 17 1" />
+    <Line x1="16" y1="8" x2="23" y2="1" />
+    <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </Svg>
+);
+
+export const PhoneMissedIcon: React.FC<IconProps> = ({ size = 20, color = '#ef4444' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Line x1="23" y1="1" x2="17" y2="7" />
+    <Line x1="17" y1="1" x2="23" y2="7" />
+    <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </Svg>
+);
+
+
 

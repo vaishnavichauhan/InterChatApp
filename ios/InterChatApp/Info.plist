@@ -36,11 +36,11 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to your camera to capture photos and videos for chat attachments.</string>
+	<string>This app needs access to your camera for video calls and capturing photo attachments.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to your photos to send image attachments in chat.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs access to your microphone when capturing videos with audio.</string>
+	<string>This app needs access to your microphone for voice and video calls and audio messages.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
