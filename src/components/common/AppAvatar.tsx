@@ -23,14 +23,18 @@ export const AppAvatar: React.FC<AppAvatarProps> = ({
   isOnline = false,
   showPresence = false,
 }) => {
-  let bgColor = colors.primary;
+  let bgColor = '#333842';
+  let textColor = '#ffffff';
+  let iconColor = '#ffffff';
 
   if (isActivity) {
-    bgColor = '#f59e0b';
+    bgColor = '#2D333B';
+    textColor = '#E53E3E';
   } else if (isBroadcast) {
-    bgColor = '#7c3aed';
+    bgColor = '#2D2A3E';
+    iconColor = '#f59e0b';
   } else if (isGroup) {
-    bgColor = colors.primaryDark;
+    bgColor = '#374151';
   }
 
   const initials = getInitials(name);
@@ -46,13 +50,15 @@ export const AppAvatar: React.FC<AppAvatarProps> = ({
             height: size,
             borderRadius: borderRadius.md,
             backgroundColor: bgColor,
+            borderWidth: 1,
+            borderColor: isActivity ? 'rgba(229, 62, 62, 0.25)' : isBroadcast ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.08)',
           },
         ]}
       >
         {isActivity ? (
-          <Text style={[styles.symbolText, { fontSize: Math.floor(size * 0.5) }]}>#</Text>
+          <Text style={[styles.symbolText, { fontSize: Math.floor(size * 0.5), color: textColor }]}>#</Text>
         ) : isBroadcast ? (
-          <BullhornIcon size={iconSize} color="#ffffff" />
+          <BullhornIcon size={iconSize} color={iconColor} />
         ) : isGroup ? (
           <UsersIcon size={iconSize} color="#ffffff" />
         ) : (

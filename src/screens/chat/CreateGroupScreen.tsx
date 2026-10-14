@@ -26,9 +26,13 @@ import {
   UsersIcon,
   MessagesSquareIcon,
   ShieldCheckIcon,
+  CityIcon,
+  BuildingIcon,
+  BuildingOfficeIcon,
 } from '../../components/icons/SvgIcons';
 import { createGroupChat, searchCoworkers } from '../../api/chatApi';
 import { getDepartments } from '../../api/departmentApi';
+import { getCompanies, Company } from '../../api/companyApi';
 import { useChatStore } from '../../store/chatStore';
 import { useAuthStore } from '../../store/authStore';
 
@@ -51,31 +55,55 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
     Number((user as any)?.role_id) === 1;
 
   const [title, setTitle] = useState('');
+  const [groupType, setGroupType] = useState<'COMPANY' | 'CUSTOM'>('COMPANY');
   const [isAnnouncement, setIsAnnouncement] = useState(false);
   const [whoCanPost, setWhoCanPost] = useState<'ALL_MEMBERS' | 'SELECTED_MEMBERS' | 'ADMIN_ONLY'>('ALL_MEMBERS');
+
+  // Companies state
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
 
   // Department state
   const [departments, setDepartments] = useState<any[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [allDeptsInCompanySelected, setAllDeptsInCompanySelected] = useState(true);
   const [isLoadingDepts, setIsLoadingDepts] = useState(true);
   const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
 
-  // Coworkers state
+  // Coworkers & Permissions state
   const [searchMemberQuery, setSearchMemberQuery] = useState('');
   const [coworkers, setCoworkers] = useState<any[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
+  const [allowedPosterIds, setAllowedPosterIds] = useState<number[]>([]);
   const [isLoadingCoworkers, setIsLoadingCoworkers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load available departments for group creation
+  // Load available companies & departments
   useEffect(() => {
     let isMounted = true;
-    const fetchDepts = async () => {
+    const fetchMetadata = async () => {
       try {
         setIsLoadingDepts(true);
-        if (isAdmin) {
-          const res = await getDepartments(false);
-          const list = res?.departments || res?.data || (Array.isArray(res) ? res : []);
+        const [compRes, deptRes] = await Promise.allSettled([
+          getCompanies(false),
+          getDepartments(false),
+        ]);
+
+        if (compRes.status === 'fulfilled') {
+          const cList = compRes.value?.companies || compRes.value?.data || (Array.isArray(compRes.value) ? compRes.value : []);
+          const validComps = Array.isArray(cList) ? cList : [];
+          if (isMounted) {
+            setCompanies(validComps);
+            if (validComps.length > 0 && selectedCompanyId === null) {
+              const mainComp = validComps.find((c: any) => c.is_main) || validComps[0];
+              setSelectedCompanyId(Number(mainComp.id));
+            }
+          }
+        }
+
+        if (deptRes.status === 'fulfilled') {
+          const list = deptRes.value?.departments || deptRes.value?.data || (Array.isArray(deptRes.value) ? deptRes.value : []);
           const validList = Array.isArray(list) ? list : [];
           if (isMounted) {
             setDepartments(validList);
@@ -83,47 +111,51 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
               setSelectedDeptId(Number(validList[0].id));
             }
           }
-        } else {
-          // For non-admins: use user's assigned departments from profile
-          const userDepts = Array.isArray(user?.departments) ? user.departments : [];
-          if (userDepts.length > 0) {
-            if (isMounted) {
-              setDepartments(userDepts);
-              setSelectedDeptId(Number(userDepts[0].department_id || (userDepts[0] as any).id));
-            }
-          } else {
-            // Fallback: fetch active departments
-            const res = await getDepartments(false);
-            const list = res?.departments || res?.data || (Array.isArray(res) ? res : []);
-            const validList = Array.isArray(list) ? list : [];
-            if (isMounted) {
-              setDepartments(validList);
-              if (validList.length > 0) {
-                setSelectedDeptId(Number(validList[0].id));
-              }
-            }
-          }
         }
       } catch (err) {
-        console.warn('Failed to load departments:', err);
+        console.warn('Failed to load group creation metadata:', err);
       } finally {
         if (isMounted) setIsLoadingDepts(false);
       }
     };
-    fetchDepts();
+
+    fetchMetadata();
     return () => {
       isMounted = false;
     };
-  }, [isAdmin, user?.departments]);
+  }, []);
 
-  // Load and filter coworkers based on department and search query
+  // Filtered departments based on selected company
+  const availableDepartmentsInScope = useMemo(() => {
+    if (groupType !== 'COMPANY' || !selectedCompanyId) {
+      return departments;
+    }
+    const filtered = departments.filter((d) => !d.company_id || Number(d.company_id) === Number(selectedCompanyId));
+    return filtered.length > 0 ? filtered : departments;
+  }, [departments, selectedCompanyId, groupType]);
+
+  // Load and filter coworkers based on Company & Department scope
   useEffect(() => {
     let isMounted = true;
     const fetchCoworkers = async () => {
       try {
         setIsLoadingCoworkers(true);
-        const deptFilter = isAnnouncement ? null : selectedDeptId;
-        const res = await searchCoworkers(searchMemberQuery, deptFilter);
+        const params: any = {};
+
+        if (!isAnnouncement) {
+          if (groupType === 'COMPANY') {
+            if (selectedCompanyId) {
+              params.companyId = selectedCompanyId;
+            }
+            if (!allDeptsInCompanySelected && selectedDeptId) {
+              params.departmentId = selectedDeptId;
+            }
+          } else if (selectedDeptId) {
+            params.departmentId = selectedDeptId;
+          }
+        }
+
+        const res = await searchCoworkers(searchMemberQuery, params);
         if (isMounted) {
           const list = res?.coworkers || res?.data || (Array.isArray(res) ? res : []);
           setCoworkers(Array.isArray(list) ? list : []);
@@ -140,19 +172,40 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [searchMemberQuery, selectedDeptId, isAnnouncement]);
+  }, [searchMemberQuery, selectedDeptId, isAnnouncement, groupType, selectedCompanyId, allDeptsInCompanySelected]);
+
+  // Active company object
+  const activeCompany = useMemo(() => {
+    if (!selectedCompanyId) return null;
+    return companies.find((c) => Number(c.id) === Number(selectedCompanyId)) || null;
+  }, [companies, selectedCompanyId]);
 
   // Active department object
   const activeDepartment = useMemo(() => {
     if (!selectedDeptId) return null;
-    return departments.find((d) => Number(d.department_id || d.id) === Number(selectedDeptId)) || null;
-  }, [departments, selectedDeptId]);
+    return (
+      availableDepartmentsInScope.find((d) => Number(d.department_id || d.id) === Number(selectedDeptId)) ||
+      null
+    );
+  }, [availableDepartmentsInScope, selectedDeptId]);
 
   const toggleMember = (colleague: any) => {
     if (selectedMembers.some((m) => m.id === colleague.id)) {
       setSelectedMembers(selectedMembers.filter((m) => m.id !== colleague.id));
+      setAllowedPosterIds(allowedPosterIds.filter((id) => id !== colleague.id));
     } else {
       setSelectedMembers([...selectedMembers, colleague]);
+      if (whoCanPost === 'SELECTED_MEMBERS') {
+        setAllowedPosterIds([...allowedPosterIds, colleague.id]);
+      }
+    }
+  };
+
+  const toggleCanPost = (colleagueId: number) => {
+    if (allowedPosterIds.includes(colleagueId)) {
+      setAllowedPosterIds(allowedPosterIds.filter((id) => id !== colleagueId));
+    } else {
+      setAllowedPosterIds([...allowedPosterIds, colleagueId]);
     }
   };
 
@@ -170,7 +223,12 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
       return;
     }
 
-    if (!isAnnouncement && !selectedDeptId) {
+    if (!isAnnouncement && groupType === 'COMPANY' && !selectedCompanyId) {
+      Alert.alert('Company Required', 'Please select a company for this team channel.');
+      return;
+    }
+
+    if (!isAnnouncement && (groupType === 'CUSTOM' || !allDeptsInCompanySelected) && !selectedDeptId) {
       Alert.alert('Department Required', 'Please select a department unit for this channel.');
       return;
     }
@@ -188,7 +246,15 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
         memberIds,
         isAnnouncement,
         whoCanPost: isAnnouncement ? 'ADMIN_ONLY' : whoCanPost,
-        departmentId: isAnnouncement ? null : Number(selectedDeptId),
+        allowedMemberIds: whoCanPost === 'SELECTED_MEMBERS' ? allowedPosterIds : undefined,
+        departmentId:
+          isAnnouncement || (groupType === 'COMPANY' && allDeptsInCompanySelected)
+            ? null
+            : selectedDeptId
+            ? Number(selectedDeptId)
+            : null,
+        companyId: groupType === 'COMPANY' && selectedCompanyId ? Number(selectedCompanyId) : null,
+        isCompanyGroup: groupType === 'COMPANY',
       });
 
       const newGroup = res.data;
@@ -196,6 +262,8 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
 
       const successMessage = isAnnouncement
         ? 'Announcement channel created successfully!'
+        : groupType === 'COMPANY'
+        ? 'Company group created successfully!'
         : 'Group created successfully!';
 
       Alert.alert('Success', successMessage, [
@@ -257,21 +325,147 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        {/* GROUP NAME */}
-        <View style={styles.fieldSection}>
-          <Text style={styles.fieldLabel}>GROUP NAME</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. Operations & Support, Engineering..."
-            placeholderTextColor={colors.textLight}
-            value={title}
-            onChangeText={setTitle}
-            returnKeyType="next"
-          />
-        </View>
-
-        {/* DEPARTMENT UNIT (Only for non-master announcements) */}
+        {/* CHANNEL SCOPE & TYPE */}
         {!isAnnouncement && (
+          <View style={styles.fieldSection}>
+            <Text style={styles.fieldLabel}>CHANNEL SCOPE & TYPE</Text>
+            <View style={styles.capsuleRow}>
+              {/* Company Group */}
+              <TouchableOpacity
+                style={[
+                  styles.capsuleCard,
+                  groupType === 'COMPANY' && styles.capsuleCardActive,
+                ]}
+                onPress={() => {
+                  setGroupType('COMPANY');
+                  setSelectedMembers([]);
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={styles.capsuleTop}>
+                  <View style={styles.capsuleIconText}>
+                    <BuildingOfficeIcon size={16} color={colors.primary} />
+                    <Text style={styles.capsuleTitle}>Company</Text>
+                  </View>
+                  {groupType === 'COMPANY' && (
+                    <View style={styles.activeCheckCircle}>
+                      <CheckIcon size={10} color="#ffffff" />
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.capsuleDesc}>
+                  Scoped to an organization & departments.
+                </Text>
+              </TouchableOpacity>
+
+              {/* Custom Group */}
+              <TouchableOpacity
+                style={[
+                  styles.capsuleCard,
+                  groupType === 'CUSTOM' && styles.capsuleCardActive,
+                ]}
+                onPress={() => {
+                  setGroupType('CUSTOM');
+                  setSelectedMembers([]);
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={styles.capsuleTop}>
+                  <View style={styles.capsuleIconText}>
+                    <UsersIcon size={16} color="#7c3aed" />
+                    <Text style={styles.capsuleTitle}>Custom</Text>
+                  </View>
+                  {groupType === 'CUSTOM' && (
+                    <View style={styles.activeCheckCircle}>
+                      <CheckIcon size={10} color="#ffffff" />
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.capsuleDesc}>
+                  Cross-department coworker group.
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ORGANIZATION / COMPANY (When groupType === 'COMPANY') */}
+        {!isAnnouncement && groupType === 'COMPANY' && (
+          <View style={styles.fieldSection}>
+            <View style={styles.labelRow}>
+              <Text style={styles.fieldLabel}>
+                ORGANIZATION / COMPANY <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <Text style={styles.boundaryBadge}>COMPANY SCOPE</Text>
+            </View>
+
+            {companies.length === 0 ? (
+              <View style={[styles.pickerButton, styles.pickerButtonDisabled]}>
+                <Text style={styles.noDeptsText}>No companies available.</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.pickerButton}
+                onPress={() => setIsCompanyModalOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.pickerButtonText} numberOfLines={1}>
+                  🏛️ {activeCompany?.company_name || activeCompany?.name || 'Select Company'}
+                  {activeCompany?.is_main ? ' (Headquarters)' : ''}
+                </Text>
+                <ChevronDownIcon size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+
+            {/* Scope inside Company: All Depts vs Specific Dept */}
+            <View style={styles.companyScopeToggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.scopeOptionChip,
+                  allDeptsInCompanySelected && styles.scopeOptionChipActive,
+                ]}
+                onPress={() => {
+                  setAllDeptsInCompanySelected(true);
+                  setSelectedMembers([]);
+                }}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.scopeOptionText,
+                    allDeptsInCompanySelected && styles.scopeOptionTextActive,
+                  ]}
+                >
+                  🌐 Entire Company (All Depts)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.scopeOptionChip,
+                  !allDeptsInCompanySelected && styles.scopeOptionChipActive,
+                ]}
+                onPress={() => {
+                  setAllDeptsInCompanySelected(false);
+                  setSelectedMembers([]);
+                }}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.scopeOptionText,
+                    !allDeptsInCompanySelected && styles.scopeOptionTextActive,
+                  ]}
+                >
+                  🏢 Specific Department
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* DEPARTMENT UNIT (If CUSTOM group or specific department chosen for COMPANY) */}
+        {!isAnnouncement && (groupType === 'CUSTOM' || !allDeptsInCompanySelected) && (
           <View style={styles.fieldSection}>
             <View style={styles.labelRow}>
               <Text style={styles.fieldLabel}>
@@ -285,9 +479,9 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.pickerLoadingText}>Loading departments...</Text>
               </View>
-            ) : departments.length === 0 ? (
+            ) : availableDepartmentsInScope.length === 0 ? (
               <View style={[styles.pickerButton, styles.pickerButtonDisabled]}>
-                <Text style={styles.noDeptsText}>No department assigned to your account.</Text>
+                <Text style={styles.noDeptsText}>No department found for this company.</Text>
               </View>
             ) : (
               <TouchableOpacity
@@ -303,6 +497,19 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
             )}
           </View>
         )}
+
+        {/* GROUP NAME */}
+        <View style={styles.fieldSection}>
+          <Text style={styles.fieldLabel}>GROUP NAME</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g. Operations & Support, Engineering..."
+            placeholderTextColor={colors.textLight}
+            value={title}
+            onChangeText={setTitle}
+            returnKeyType="next"
+          />
+        </View>
 
         {/* WHO CAN SEND MESSAGES? */}
         <View style={styles.fieldSection}>
@@ -477,6 +684,7 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
               ) : (
                 coworkers.map((colleague, index) => {
                   const isSelected = selectedMembers.some((m) => m.id === colleague.id);
+                  const isPoster = allowedPosterIds.includes(colleague.id);
                   const isLast = index === coworkers.length - 1;
                   return (
                     <TouchableOpacity
@@ -496,6 +704,13 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
                           <Text style={styles.coworkerName} numberOfLines={1}>
                             {colleague.name || colleague.username}
                           </Text>
+                          {colleague.company_name && (
+                            <View style={styles.compBadgePill}>
+                              <Text style={styles.compBadgeText} numberOfLines={1}>
+                                🏛️ {colleague.company_name}
+                              </Text>
+                            </View>
+                          )}
                           {colleague.department_names && (
                             <View style={styles.deptBadgePill}>
                               <Text style={styles.deptBadgeText} numberOfLines={1}>
@@ -509,6 +724,29 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
                           {colleague.mobile_number ? ` • ${colleague.mobile_number}` : ''}
                         </Text>
                       </View>
+
+                      {isSelected && whoCanPost === 'SELECTED_MEMBERS' && (
+                        <TouchableOpacity
+                          style={[
+                            styles.postPermissionBadge,
+                            isPoster ? styles.postPermissionBadgeActive : styles.postPermissionBadgeReadOnly,
+                          ]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            toggleCanPost(colleague.id);
+                          }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        >
+                          <Text
+                            style={[
+                              styles.postPermissionText,
+                              isPoster ? styles.postPermissionTextActive : styles.postPermissionTextReadOnly,
+                            ]}
+                          >
+                            {isPoster ? '✏️ Can Post' : '👁️ Read-only'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
 
                       <View style={[styles.selectBox, isSelected && styles.selectBoxChecked]}>
                         {isSelected && <CheckIcon size={12} color="#ffffff" />}
@@ -584,7 +822,7 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
             </View>
 
             <FlatList
-              data={departments}
+              data={availableDepartmentsInScope}
               keyExtractor={(item) => String(item.department_id || item.id)}
               renderItem={({ item }) => {
                 const id = Number(item.department_id || item.id);
@@ -604,6 +842,80 @@ export const CreateGroupScreen: React.FC<CreateGroupScreenProps> = ({ navigation
                       <Text style={[styles.deptOptionName, isSelected && styles.deptOptionNameSelected]}>
                         {item.department_name || item.name}
                       </Text>
+                    </View>
+                    {isSelected && (
+                      <View style={styles.deptOptionCheck}>
+                        <CheckIcon size={14} color={colors.primary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+              contentContainerStyle={{ paddingHorizontal: spacing.md }}
+              ItemSeparatorComponent={() => <View style={styles.deptSeparator} />}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Company Picker Bottom Sheet / Modal */}
+      <Modal
+        visible={isCompanyModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsCompanyModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.modalDismissArea}
+            activeOpacity={1}
+            onPress={() => setIsCompanyModalOpen(false)}
+          />
+          <View
+            style={[
+              styles.modalSheet,
+              { paddingBottom: Math.max(insets.bottom, 20) },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Select Organization / Company</Text>
+              <TouchableOpacity
+                onPress={() => setIsCompanyModalOpen(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <CloseIcon size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={companies}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => {
+                const id = Number(item.id);
+                const isSelected = selectedCompanyId === id;
+                return (
+                  <TouchableOpacity
+                    style={[styles.deptOption, isSelected && styles.deptOptionSelected]}
+                    onPress={() => {
+                      setSelectedCompanyId(id);
+                      setSelectedDeptId(null);
+                      setSelectedMembers([]);
+                      setIsCompanyModalOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.deptOptionTextRow}>
+                      <Text style={styles.deptOptionEmoji}>🏛️</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.deptOptionName, isSelected && styles.deptOptionNameSelected]}>
+                          {item.company_name || item.name}
+                          {item.is_main ? ' (Headquarters)' : ''}
+                        </Text>
+                        {item.company_code && (
+                          <Text style={styles.companyOptionSub}>Code: {item.company_code}</Text>
+                        )}
+                      </View>
                     </View>
                     {isSelected && (
                       <View style={styles.deptOptionCheck}>
@@ -1055,5 +1367,79 @@ const styles = StyleSheet.create({
   deptSeparator: {
     height: 1,
     backgroundColor: '#f8fafc',
+  },
+  companyScopeToggleRow: {
+    flexDirection: 'row',
+    gap: spacing.xs + 2,
+    marginTop: spacing.xs + 2,
+  },
+  scopeOptionChip: {
+    flex: 1,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.sm + 2,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scopeOptionChipActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: colors.primary,
+  },
+  scopeOptionText: {
+    fontSize: fontSizes.tiny,
+    fontWeight: fontWeights.semibold,
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  scopeOptionTextActive: {
+    color: colors.primary,
+    fontWeight: fontWeights.bold,
+  },
+  companyOptionSub: {
+    fontSize: fontSizes.tiny,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  compBadgePill: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#bfdbfe',
+  },
+  compBadgeText: {
+    fontSize: fontSizes.tiny - 1,
+    fontWeight: fontWeights.bold,
+    color: colors.primary,
+  },
+  postPermissionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginRight: spacing.xs,
+  },
+  postPermissionBadgeActive: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  postPermissionBadgeReadOnly: {
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  postPermissionText: {
+    fontSize: fontSizes.tiny - 1,
+    fontWeight: fontWeights.bold,
+  },
+  postPermissionTextActive: {
+    color: '#059669',
+  },
+  postPermissionTextReadOnly: {
+    color: '#64748b',
   },
 });

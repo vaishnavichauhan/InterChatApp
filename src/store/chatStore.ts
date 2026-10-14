@@ -31,6 +31,10 @@ export interface Conversation {
   partnerId?: number | null;
   department_name?: string | null;
   department_id?: number | null;
+  company_name?: string | null;
+  company_id?: number | null;
+  is_company_group?: boolean | number;
+  is_company_broadcast?: boolean | number;
   other_user_name?: string | null;
   other_user_email?: string | null;
   other_user_mobile?: string | null;
@@ -137,7 +141,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   activeConversation: null,
   messages: [],
-  isLoadingConversations: false,
+  isLoadingConversations: true,
   isLoadingMessages: false,
   onlineUserIds: [],
   typingUsers: [],
@@ -160,15 +164,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const list = res?.conversations || res?.data || (Array.isArray(res) ? res : []);
       const rawList: Conversation[] = Array.isArray(list) ? list : [];
       const validList = rawList.map((c: any) => {
-        // If last_message is empty but last_message_at exists, the last message was an attachment
-        let lastMsg = c.last_message || c.last_message_text || '';
-        if (!lastMsg && c.last_message_at) {
-          lastMsg = '📎 Attachment';
+        let lastMsg = (c.last_message || c.last_message_text || '').trim();
+        const attName = c.original_name || c.file_name || c.attachment_name;
+        if (!lastMsg && attName) {
+          lastMsg = getAttachmentLabel(c.mime_type || c.file_type, attName);
         }
         return {
           ...c,
           partnerId: c.partnerId || c.other_user_id || c.partner_id || null,
-          last_message: lastMsg,
+          last_message: lastMsg || null,
         };
       });
       const sorted = sortConversations(validList);

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,14 +20,15 @@ import {
   HardDriveIcon,
   FolderIcon,
   CheckIcon,
-  LockIcon,
   EyeIcon,
   EyeOffIcon,
+  RefreshIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getStorageConfig,
   saveStorageConfig,
   testStorageConnection,
+  getOneDriveAuthUrl,
 } from '../../api/adminApi';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
 
@@ -34,7 +36,7 @@ interface CloudStorageMasterScreenProps {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CloudStorageMaster'>;
 }
 
-type StorageDriver = 'LOCAL' | 'GDRIVE' | 'GCS' | 'MICROSOFT';
+export type StorageDriver = 'ONEDRIVE' | 'MICROSOFT' | 'GDRIVE' | 'LOCAL' | 'GCS';
 
 const DRIVER_OPTIONS: {
   key: StorageDriver;
@@ -51,9 +53,9 @@ const DRIVER_OPTIONS: {
 }[] = [
     {
     key: 'LOCAL',
-    title: 'Local Server Disk',
+    title: 'Local Disk',
     badge: 'Zero Config',
-    subtext: 'Direct storage on hosting server file disk.',
+    subtext: 'Direct storage on your server disk.',
     icon: (selected: boolean) => (
       <HardDriveIcon size={24} color={selected ? colors.primary : colors.primaryDark} />
     ),
@@ -65,10 +67,25 @@ const DRIVER_OPTIONS: {
     iconBg: colors.primarySubtle,
   },
   {
+    key: 'ONEDRIVE',
+    title: 'OneDrive',
+    badge: '1 TB Cloud',
+    subtext: 'Your 1 TB Microsoft 365 account storage.',
+    icon: (selected: boolean) => (
+      <CloudIcon size={24} color={selected ? '#2563eb' : '#1d4ed8'} />
+    ),
+    activeColor: '#2563eb',
+    badgeBg: '#dbeafe',
+    badgeText: '#1d4ed8',
+    cardActiveBg: '#eff6ff',
+    cardActiveBorder: '#3b82f6',
+    iconBg: '#dbeafe',
+  },
+  {
     key: 'MICROSOFT',
-    title: 'Microsoft Cloud',
-    badge: 'Azure / MS365',
-    subtext: 'Azure Blob Storage & OneDrive integration.',
+    title: 'Azure Blob',
+    badge: 'Azure Key',
+    subtext: 'Microsoft Azure Blob Storage account.',
     icon: (selected: boolean) => (
       <CloudIcon size={24} color={selected ? '#0284c7' : '#0369a1'} />
     ),
@@ -83,25 +100,9 @@ const DRIVER_OPTIONS: {
     key: 'GDRIVE',
     title: 'Google Drive',
     badge: '15 GB Free',
-    subtext: 'Personal / Workspace Service Account.',
+    subtext: 'Personal Google Drive storage with service account.',
     icon: (selected: boolean) => (
-      <FolderIcon size={24} color={selected ? '#2563eb' : '#1d4ed8'} />
-    ),
-    activeColor: '#2563eb',
-    badgeBg: '#dbeafe',
-    badgeText: '#1d4ed8',
-    cardActiveBg: '#eff6ff',
-    cardActiveBorder: '#60a5fa',
-    iconBg: '#dbeafe',
-  },
-
-  {
-    key: 'GCS',
-    title: 'Google Cloud (GCS)',
-    badge: 'Enterprise GCS',
-    subtext: 'Scalable bucket storage on Google Cloud.',
-    icon: (selected: boolean) => (
-      <CloudIcon size={24} color={selected ? '#059669' : '#047857'} />
+      <FolderIcon size={24} color={selected ? '#059669' : '#047857'} />
     ),
     activeColor: '#059669',
     badgeBg: '#d1fae5',
@@ -110,18 +111,43 @@ const DRIVER_OPTIONS: {
     cardActiveBorder: '#34d399',
     iconBg: '#d1fae5',
   },
+
+  {
+    key: 'GCS',
+    title: 'Google Cloud',
+    badge: 'Enterprise GCS',
+    subtext: 'Enterprise GCS bucket.',
+    icon: (selected: boolean) => (
+      <CloudIcon size={24} color={selected ? '#7c3aed' : '#6d28d9'} />
+    ),
+    activeColor: '#7c3aed',
+    badgeBg: '#ede9fe',
+    badgeText: '#6d28d9',
+    cardActiveBg: '#f5f3ff',
+    cardActiveBorder: '#a78bfa',
+    iconBg: '#ede9fe',
+  },
 ];
 
 export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [connectingOneDrive, setConnectingOneDrive] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Storage Config State
   const [driver, setDriver] = useState<StorageDriver>('LOCAL');
 
-  // Microsoft Cloud (Azure / OneDrive)
+  // Microsoft OneDrive (1 TB)
+  const [onedriveClientId, setOnedriveClientId] = useState('');
+  const [onedriveClientSecret, setOnedriveClientSecret] = useState('');
+  const [onedriveFolderName, setOnedriveFolderName] = useState('InterChat_Uploads');
+  const [hasOnedriveRefresh, setHasOnedriveRefresh] = useState(false);
+  const [onedriveUserEmail, setOnedriveUserEmail] = useState('');
+  const [showOneDriveSecret, setShowOneDriveSecret] = useState(false);
+
+  // Microsoft Azure Blob Storage
   const [azureConnectionString, setAzureConnectionString] = useState('');
   const [azureContainerName, setAzureContainerName] = useState('interchat-files');
   const [azureAccountName, setAzureAccountName] = useState('');
@@ -132,7 +158,6 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
   const [gdriveFolderId, setGdriveFolderId] = useState('');
   const [gdriveClientEmail, setGdriveClientEmail] = useState('');
   const [gdrivePrivateKey, setGdrivePrivateKey] = useState('');
-  const [gdriveUserEmail, setGdriveUserEmail] = useState('raj.jeenweb@gmail.com');
 
   // Google Cloud Storage (GCS)
   const [projectId, setProjectId] = useState('');
@@ -147,20 +172,30 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
       if (res.data?.success) {
         const c = res.data.config;
         setDriver(c.driver || 'LOCAL');
+
+        // OneDrive
+        setOnedriveClientId(c.onedriveClientId || '');
+        setOnedriveClientSecret(c.onedriveClientSecretMasked || '');
+        setOnedriveFolderName(c.onedriveFolderName || 'InterChat_Uploads');
+        setHasOnedriveRefresh(Boolean(c.hasOnedriveRefresh));
+        setOnedriveUserEmail(c.onedriveUserEmail || '');
+
+        // Azure
         setAzureConnectionString(c.azureConnectionStringMasked || '');
         setAzureContainerName(c.azureContainerName || 'interchat-files');
         setAzureAccountName(c.azureAccountName || '');
         setAzureAccountKey(c.azureAccountKeyMasked || '');
 
+        // GCS
         setProjectId(c.projectId || '');
         setBucketName(c.bucketName || '');
         setClientEmail(c.clientEmail || c.gdriveClientEmail || '');
         setPrivateKey(c.privateKeyMasked || c.gdrivePrivateKeyMasked || '');
 
+        // Google Drive
         setGdriveFolderId(c.gdriveFolderId || '');
         setGdriveClientEmail(c.gdriveClientEmail || c.clientEmail || '');
         setGdrivePrivateKey(c.gdrivePrivateKeyMasked || c.privateKeyMasked || '');
-        setGdriveUserEmail(c.gdriveUserEmail || 'raj.jeenweb@gmail.com');
       }
     } catch (err) {
       console.error('Failed to load storage config:', err);
@@ -174,10 +209,41 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
   }, [fetchConfig]);
 
   const getDriverTitle = (d: StorageDriver) => {
-    if (d === 'MICROSOFT') return 'Microsoft Cloud Storage (Azure / OneDrive)';
+    if (d === 'ONEDRIVE') return 'Microsoft OneDrive (1 TB)';
+    if (d === 'MICROSOFT') return 'Microsoft Azure Blob Storage';
     if (d === 'GDRIVE') return 'Google Drive (15 GB Free)';
     if (d === 'GCS') return 'Google Cloud Storage (GCS)';
     return 'Local Server Disk';
+  };
+
+  const handleConnectOneDrive = async () => {
+    if (!onedriveClientId || !onedriveClientId.trim()) {
+      Alert.alert('Client ID Required', 'Please enter your Application (client) ID first.');
+      return;
+    }
+
+    setConnectingOneDrive(true);
+    try {
+      const res = await getOneDriveAuthUrl({
+        clientId: onedriveClientId.trim(),
+        clientSecret: onedriveClientSecret ? onedriveClientSecret.trim() : '',
+      });
+
+      if (res.data?.success && res.data.authUrl) {
+        const supported = await Linking.canOpenURL(res.data.authUrl);
+        if (supported) {
+          await Linking.openURL(res.data.authUrl);
+        } else {
+          Alert.alert('Cannot Open Browser', 'Unable to launch browser on this device.');
+        }
+      } else {
+        Alert.alert('Error', res.data?.message || 'Failed to generate authorization URL');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to initiate OneDrive connection');
+    } finally {
+      setConnectingOneDrive(false);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -186,6 +252,9 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
 
     const payload = {
       driver,
+      onedriveClientId,
+      onedriveClientSecret,
+      onedriveFolderName,
       azureConnectionString,
       azureContainerName,
       azureAccountName,
@@ -197,7 +266,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
       gdriveFolderId,
       gdriveClientEmail,
       gdrivePrivateKey,
-      gdriveUserEmail,
+      gdriveUserEmail: 'raj.jeenweb@gmail.com',
     };
 
     try {
@@ -221,6 +290,9 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
     setSaving(true);
     const payload = {
       driver,
+      onedriveClientId,
+      onedriveClientSecret,
+      onedriveFolderName,
       azureConnectionString,
       azureContainerName,
       azureAccountName,
@@ -232,7 +304,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
       gdriveFolderId,
       gdriveClientEmail,
       gdrivePrivateKey,
-      gdriveUserEmail,
+      gdriveUserEmail: 'raj.jeenweb@gmail.com',
     };
 
     try {
@@ -272,137 +344,265 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Subtitle Banner ── */}
-          <View style={styles.headerBanner}>
-            <Text style={styles.bannerTitle}>Cloud Storage Master</Text>
-            <Text style={styles.bannerSubtitle}>
-              Configure internal document and chat file storage: Microsoft Cloud Storage (Azure / OneDrive), Google Drive (15 GB Free), Local Server Disk, or Google Cloud.
-            </Text>
-          </View>
+          {/* ── Full-Screen Storage Workspace (Border Removed) ── */}
+          <View style={styles.fullScreenWorkspace}>
+            {/* Integrated Active Status Header */}
+            <View style={styles.activeStatusHeaderRow}>
+              <View style={styles.activeStatusLeft}>
+                <View
+                  style={[
+                    styles.activeIconWrap,
+                    driver === 'ONEDRIVE'
+                      ? { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }
+                      : driver === 'MICROSOFT'
+                      ? { backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }
+                      : driver === 'GDRIVE'
+                      ? { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }
+                      : driver === 'GCS'
+                      ? { backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }
+                      : { backgroundColor: colors.primarySubtle, borderColor: colors.primaryMuted },
+                  ]}
+                >
+                  {driver === 'LOCAL' ? (
+                    <HardDriveIcon size={20} color={colors.primary} />
+                  ) : driver === 'GDRIVE' ? (
+                    <FolderIcon size={20} color="#059669" />
+                  ) : driver === 'ONEDRIVE' ? (
+                    <CloudIcon size={20} color="#2563eb" />
+                  ) : driver === 'MICROSOFT' ? (
+                    <CloudIcon size={20} color="#0284c7" />
+                  ) : (
+                    <CloudIcon size={20} color="#7c3aed" />
+                  )}
+                </View>
 
-          {/* ── Current Active Storage Provider Status Card ── */}
-          <View style={[styles.activeStatusCard, shadows.sm]}>
-            <View style={styles.activeStatusLeft}>
-              <View
-                style={[
-                  styles.activeIconWrap,
-                  driver === 'MICROSOFT'
-                    ? { backgroundColor: '#f0f9ff' }
-                    : driver === 'GDRIVE'
-                    ? { backgroundColor: '#eff6ff' }
-                    : driver === 'GCS'
-                    ? { backgroundColor: '#ecfdf5' }
-                    : { backgroundColor: colors.primarySubtle },
-                ]}
-              >
-                {driver === 'LOCAL' ? (
-                  <HardDriveIcon size={20} color={colors.primary} />
-                ) : driver === 'GDRIVE' ? (
-                  <FolderIcon size={20} color="#2563eb" />
-                ) : (
-                  <CloudIcon
-                    size={20}
-                    color={driver === 'MICROSOFT' ? '#0284c7' : '#059669'}
-                  />
-                )}
+                <View style={styles.activeTextCol}>
+                  <Text style={styles.activeLabel}>CURRENT ACTIVE STORAGE PROVIDER</Text>
+                  <Text style={styles.activeDriverName}>{getDriverTitle(driver)}</Text>
+                </View>
               </View>
 
-              <View style={styles.activeTextCol}>
-                <Text style={styles.activeLabel}>CURRENT ACTIVE STORAGE PROVIDER</Text>
-                <Text style={styles.activeDriverName}>{getDriverTitle(driver)}</Text>
-              </View>
+              {/* Online & Ready Badge */}
+             
             </View>
-          </View>
 
-          {/* ── Horizontal Swipe Storage Driver Section (Box Type UI) ── */}
-          <View style={styles.swipeSectionContainer}>
-            <View style={styles.sectionHeaderRow}>
+      
+
+
+            {/* Storage Driver Selection */}
+            <View style={styles.driverSelectionSection}>
               <Text style={styles.sectionHeading}>SELECT STORAGE DRIVER</Text>
-              <View style={styles.swipeHintBadge}>
-                <Text style={styles.swipeHintText}>Swipe cards →</Text>
-              </View>
-            </View>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalCardsScroll}
-            >
-              {DRIVER_OPTIONS.map((item) => {
-                const isSelected = driver === item.key;
-                return (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[
-                      styles.boxCard,
-                      shadows.sm,
-                      isSelected && {
-                        backgroundColor: item.cardActiveBg,
-                        borderColor: item.cardActiveBorder,
-                        borderWidth: 2,
-                      },
-                    ]}
-                    onPress={() => setDriver(item.key)}
-                    activeOpacity={0.75}
-                  >
-                    {/* Top Row: Provider Icon + Selected Indicator */}
-                    <View style={styles.boxCardTopRow}>
-                      <View style={[styles.boxIconWrap, { backgroundColor: item.iconBg }]}>
-                        {item.icon(isSelected)}
+              <ScrollView
+                horizontal
+                nestedScrollEnabled={true}
+                showsHorizontalScrollIndicator={false}
+                style={styles.horizontalCardsScrollView}
+                contentContainerStyle={styles.horizontalCardsScroll}
+              >
+                {DRIVER_OPTIONS.map((item) => {
+                  const isSelected = driver === item.key;
+                  return (
+                    <TouchableOpacity
+                      key={item.key}
+                      style={[
+                        styles.boxCard,
+                        isSelected
+                          ? {
+                              backgroundColor: item.cardActiveBg,
+                              borderColor: item.cardActiveBorder,
+                              borderWidth: 2,
+                            }
+                          : {
+                              backgroundColor: '#ffffff',
+                              borderColor: '#e2e8f0',
+                              borderWidth: 1.5,
+                            },
+                      ]}
+                      onPress={() => setDriver(item.key)}
+                      activeOpacity={0.75}
+                    >
+                      {/* Top Row: Provider Icon + Selected Indicator */}
+                      <View style={styles.boxCardTopRow}>
+                        <View style={[styles.boxIconWrap, { backgroundColor: item.iconBg }]}>
+                          {item.icon(isSelected)}
+                        </View>
+
+                        {isSelected ? (
+                          <View style={[styles.boxCheckWrap, { backgroundColor: item.activeColor }]}>
+                            <CheckIcon size={12} color="#ffffff" />
+                          </View>
+                        ) : (
+                          <View style={styles.boxRadioWrap} />
+                        )}
                       </View>
 
-                      {isSelected ? (
-                        <View style={[styles.boxCheckWrap, { backgroundColor: item.activeColor }]}>
-                          <CheckIcon size={12} color="#ffffff" />
-                        </View>
-                      ) : (
-                        <View style={styles.boxRadioWrap} />
-                      )}
-                    </View>
-
-                    {/* Title */}
-                    <Text style={styles.boxCardTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-
-                    {/* Badge */}
-                    <View style={[styles.boxBadgePill, { backgroundColor: item.badgeBg }]}>
-                      <Text style={[styles.boxBadgeText, { color: item.badgeText }]}>
-                        {item.badge}
+                      {/* Title */}
+                      <Text style={styles.boxCardTitle} numberOfLines={1}>
+                        {item.title}
                       </Text>
-                    </View>
 
-                    {/* Description Subtext */}
-                    <Text style={styles.boxCardSubtext} numberOfLines={2}>
-                      {item.subtext}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                      {/* Badge */}
+                      <View style={[styles.boxBadgePill, { backgroundColor: item.badgeBg }]}>
+                        <Text style={[styles.boxBadgeText, { color: item.badgeText }]}>
+                          {item.badge}
+                        </Text>
+                      </View>
 
-          {/* ── Main Configuration Card for Selected Driver ── */}
-          <View style={[styles.card, shadows.sm]}>
-            <View style={styles.configCardHeader}>
-              <Text style={styles.configCardHeading}>
-                {driver === 'MICROSOFT'
-                  ? 'MICROSOFT AZURE & ONEDRIVE CONFIG'
-                  : driver === 'GDRIVE'
-                  ? 'GOOGLE DRIVE SERVICE ACCOUNT CONFIG'
-                  : driver === 'GCS'
-                  ? 'GOOGLE CLOUD STORAGE (GCS) CONFIG'
-                  : 'LOCAL SERVER DISK STORAGE'}
-              </Text>
+                      {/* Description Subtext */}
+                      <Text style={styles.boxCardSubtext} numberOfLines={2}>
+                        {item.subtext}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             {/* ── DRIVER SPECIFIC FIELDS ── */}
 
-            {/* Case 1: MICROSOFT CLOUD / AZURE */}
+            {/* 1. MICROSOFT ONEDRIVE (1 TB) */}
+            {driver === 'ONEDRIVE' && (
+              <View style={styles.driverConfigBox}>
+                <View style={styles.guideCalloutBlue}>
+                  <Text style={styles.guideTitleBlue}>Connect Your 1 TB OneDrive Account (Simple 3 Steps):</Text>
+                  <Text style={styles.guideStepBlue}>
+                    1. Go to Azure Portal ➔ App registrations and tap New registration.
+                  </Text>
+                  <Text style={styles.guideStepBlue}>
+                    2. Name it "InterChat OneDrive". Select multi-tenant & personal Microsoft accounts.
+                  </Text>
+                  <Text style={styles.guideStepBlue}>
+                    3. Copy Application (client) ID and Client Secret Value below.
+                  </Text>
+                  <Text style={styles.guideStepBlue}>
+                    4. Tap the blue "Connect 1 TB OneDrive Account" button to sign in!
+                  </Text>
+                </View>
+
+                {/* Connection Status Card */}
+                {hasOnedriveRefresh ? (
+                  <View style={styles.onedriveStatusConnected}>
+                    <View style={styles.onedriveStatusLeft}>
+                      <View style={styles.onedriveStatusIconWrapGreen}>
+                        <CheckIcon size={18} color="#ffffff" />
+                      </View>
+                      <View style={styles.onedriveStatusTextCol}>
+                        <View style={styles.onedriveBadgeRow}>
+                          <Text style={styles.onedriveConnectedTitle}>1 TB OneDrive Linked & Active</Text>
+                          <View style={styles.readyBadgePill}>
+                            <Text style={styles.readyBadgeText}>READY</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.onedriveConnectedSubtext}>
+                          {onedriveUserEmail ? `Account: ${onedriveUserEmail}` : 'Microsoft 365 Cloud Drive Connected'}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.reconnectBtn}
+                      onPress={handleConnectOneDrive}
+                      disabled={connectingOneDrive}
+                    >
+                      <RefreshIcon size={12} color="#065f46" />
+                      <Text style={styles.reconnectBtnText}>Reconnect</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.onedriveStatusUnlinked}>
+                    <View style={styles.onedriveStatusIconWrapAmber}>
+                      <CloudIcon size={18} color="#ffffff" />
+                    </View>
+                    <View style={styles.onedriveStatusTextCol}>
+                      <Text style={styles.onedriveUnlinkedTitle}>Account Not Connected Yet</Text>
+                      <Text style={styles.onedriveUnlinkedSubtext}>
+                        Enter your Application ID below, then tap "Connect 1 TB OneDrive Account" to link your 1,000 GB storage.
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Application (client) ID <Text style={{ color: '#ef4444' }}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={[styles.input, styles.fontMono]}
+                    placeholder="e.g. 7f9a1234-abcd-5678-ef90-..."
+                    placeholderTextColor={colors.textLight}
+                    value={onedriveClientId}
+                    onChangeText={setOnedriveClientId}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <View style={styles.labelRowBetween}>
+                    <Text style={styles.inputLabel}>Client Secret Value (Optional / Recommended)</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowOneDriveSecret(!showOneDriveSecret)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Text style={styles.toggleKeyText}>{showOneDriveSecret ? 'Hide' : 'Show'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.fontMono]}
+                    placeholder="Enter Client Secret Value from Azure"
+                    placeholderTextColor={colors.textLight}
+                    value={onedriveClientSecret}
+                    onChangeText={setOnedriveClientSecret}
+                    secureTextEntry={!showOneDriveSecret}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Target Folder in OneDrive</Text>
+                  <TextInput
+                    style={[styles.input, styles.fontMono]}
+                    placeholder="InterChat_Uploads"
+                    placeholderTextColor={colors.textLight}
+                    value={onedriveFolderName}
+                    onChangeText={setOnedriveFolderName}
+                    autoCapitalize="none"
+                  />
+                  <Text style={styles.fieldHelperText}>
+                    Uploaded images, videos, and files will automatically appear inside this folder in your 1 TB OneDrive.
+                  </Text>
+                </View>
+
+                {/* Connect OneDrive Action Button */}
+                <TouchableOpacity
+                  style={[styles.connectOneDriveBtn, (!onedriveClientId || connectingOneDrive) && { opacity: 0.6 }]}
+                  onPress={handleConnectOneDrive}
+                  disabled={connectingOneDrive || !onedriveClientId}
+                  activeOpacity={0.8}
+                >
+                  {connectingOneDrive ? (
+                    <>
+                      <ActivityIndicator size="small" color="#ffffff" />
+                      <Text style={styles.connectOneDriveBtnText}>Opening Microsoft Login...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <CloudIcon size={16} color="#ffffff" />
+                      <Text style={styles.connectOneDriveBtnText}>
+                        {hasOnedriveRefresh ? 'Re-authorize 1 TB OneDrive Account' : 'Connect 1 TB OneDrive Account'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* 2. MICROSOFT AZURE BLOB STORAGE */}
             {driver === 'MICROSOFT' && (
               <View style={styles.driverConfigBox}>
                 <View style={styles.guideCalloutSky}>
-                  <Text style={styles.guideTitleSky}>Microsoft Azure Storage & OneDrive Guide:</Text>
+                  <Text style={styles.guideTitleSky}>Microsoft Azure Storage Guide:</Text>
                   <Text style={styles.guideStepSky}>
                     1. Log in to Microsoft Azure Portal (portal.azure.com).
                   </Text>
@@ -458,7 +658,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
 
                 <View style={styles.inputGroup}>
                   <View style={styles.labelRowBetween}>
-                    <Text style={styles.inputLabel}>Storage Account Access Key (Optional)</Text>
+                    <Text style={styles.inputLabel}>Storage Account Access Key (Optional if Connection String provided)</Text>
                     <TouchableOpacity
                       onPress={() => setShowAzureKey(!showAzureKey)}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -479,18 +679,18 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
               </View>
             )}
 
-            {/* Case 2: GOOGLE DRIVE */}
+            {/* 3. GOOGLE DRIVE */}
             {driver === 'GDRIVE' && (
               <View style={styles.driverConfigBox}>
-                <View style={styles.guideCalloutBlue}>
-                  <Text style={styles.guideTitleBlue}>Google Drive Configuration Guide:</Text>
-                  <Text style={styles.guideStepBlue}>
+                <View style={styles.guideCalloutGreen}>
+                  <Text style={styles.guideTitleGreen}>Google Drive Configuration Guide:</Text>
+                  <Text style={styles.guideStepGreen}>
                     1. Create folder named "InterChat_Files" in Google Drive (drive.google.com).
                   </Text>
-                  <Text style={styles.guideStepBlue}>
+                  <Text style={styles.guideStepGreen}>
                     2. Right-click folder ➔ Share ➔ paste Client Email below as Editor.
                   </Text>
-                  <Text style={styles.guideStepBlue}>
+                  <Text style={styles.guideStepGreen}>
                     3. Copy Folder ID from URL (folders/FOLDER_ID) and paste below.
                   </Text>
                 </View>
@@ -543,7 +743,21 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
               </View>
             )}
 
-            {/* Case 3: GOOGLE CLOUD STORAGE (GCS) */}
+            {/* 4. LOCAL SERVER DISK */}
+            {driver === 'LOCAL' && (
+              <View style={styles.localInfoCard}>
+                <View style={styles.localInfoHeader}>
+                  <HardDriveIcon size={16} color={colors.primary} />
+                  <Text style={styles.localInfoTitle}>Local Server Disk Storage Active</Text>
+                </View>
+                <Text style={styles.localInfoDesc}>
+                  All chat documents and images are stored securely on the hosting server in the local directory.
+                </Text>
+                <Text style={styles.localInfoMuted}>Zero cloud API configuration required.</Text>
+              </View>
+            )}
+
+            {/* 5. GOOGLE CLOUD STORAGE (GCS) */}
             {driver === 'GCS' && (
               <View style={styles.driverConfigBox}>
                 <View style={styles.inputGroup}>
@@ -600,20 +814,6 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
               </View>
             )}
 
-            {/* Case 4: LOCAL SERVER DISK */}
-            {driver === 'LOCAL' && (
-              <View style={styles.localInfoCard}>
-                <View style={styles.localInfoHeader}>
-                  <HardDriveIcon size={16} color={colors.primary} />
-                  <Text style={styles.localInfoTitle}>Local Server Disk Storage Active</Text>
-                </View>
-                <Text style={styles.localInfoDesc}>
-                  All chat documents and images are stored securely on the hosting server in the local directory.
-                </Text>
-                <Text style={styles.localInfoMuted}>Zero cloud API configuration required.</Text>
-              </View>
-            )}
-
             {/* Test Result Feedback */}
             {testResult && (
               <View
@@ -651,7 +851,7 @@ export const CloudStorageMasterScreen: React.FC<CloudStorageMasterScreenProps> =
                     <>
                       <CheckIcon size={14} color={colors.primary} />
                       <Text style={styles.testBtnText}>
-                        Test {driver === 'MICROSOFT' ? 'Microsoft Cloud' : driver === 'GDRIVE' ? 'Google Drive' : 'GCS'} Connection
+                        Test {driver === 'ONEDRIVE' ? 'OneDrive' : driver === 'MICROSOFT' ? 'Microsoft Cloud' : driver === 'GDRIVE' ? 'Google Drive' : 'GCS'} Connection
                       </Text>
                     </>
                   )}
@@ -713,6 +913,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+    backgroundColor: '#f8fafc',
   },
   loadingText: {
     fontSize: fontSizes.sm,
@@ -721,63 +922,33 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     flex: 1,
+    backgroundColor: '#f8fafc',
   },
   scrollContent: {
-    padding: spacing.md,
+    paddingHorizontal: 18,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl * 2,
+    flexGrow: 1,
+    backgroundColor: '#f8fafc',
   },
 
-  /* ── Header Banner ── */
-  headerBanner: {
-    backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: spacing.md,
+  /* ── Full-Screen Storage Workspace ── */
+  fullScreenWorkspace: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
   },
-  bannerTagPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    marginBottom: spacing.xs,
-  },
-  bannerTagText: {
-    fontSize: 9.5,
-    fontWeight: fontWeights.black,
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  bannerTitle: {
-    fontSize: fontSizes.xl,
-    fontWeight: fontWeights.black,
-    color: colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  bannerSubtitle: {
-    fontSize: 11.5,
-    color: colors.textMuted,
-    marginTop: 3,
-    lineHeight: 17,
-  },
-
-  /* ── Active Status Card ── */
-  activeStatusCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: spacing.md,
+  activeStatusHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 14,
     flexWrap: 'wrap',
     gap: 10,
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginBottom: spacing.md,
   },
   activeStatusLeft: {
     flexDirection: 'row',
@@ -792,7 +963,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
   },
   activeTextCol: {
     flex: 1,
@@ -830,60 +1000,41 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  /* ── Horizontal Swipe Storage Driver Section ── */
-  swipeSectionContainer: {
+  /* ── Storage Driver Selection Section ── */
+  driverSelectionSection: {
     marginBottom: spacing.md,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingHorizontal: 2,
   },
   sectionHeading: {
     fontSize: 11,
     fontWeight: fontWeights.extrabold,
     color: colors.textSecondary,
     letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  swipeHintBadge: {
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  swipeHintText: {
-    fontSize: 10,
-    fontWeight: fontWeights.bold,
-    color: '#64748b',
+  horizontalCardsScrollView: {
+    marginHorizontal: -18,
   },
   horizontalCardsScroll: {
     gap: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
   },
   boxCard: {
-    width: 156,
-    minHeight: 180,
+    width: 150,
+    minHeight: 175,
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
-    padding: 14,
+    padding: 13,
     justifyContent: 'space-between',
   },
   boxCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   boxIconWrap: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -906,14 +1057,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: fontWeights.extrabold,
     color: colors.textPrimary,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   boxBadgePill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 7,
     paddingVertical: 2.5,
     borderRadius: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   boxBadgeText: {
     fontSize: 9.5,
@@ -934,20 +1085,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  configCardHeader: {
-    paddingBottom: 10,
-    marginBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  configCardHeading: {
-    fontSize: 11,
-    fontWeight: fontWeights.extrabold,
-    color: colors.textSecondary,
-    letterSpacing: 0.5,
-  },
   driverConfigBox: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+
+  /* ── Guide Boxes ── */
+  guideCalloutBlue: {
+    backgroundColor: '#eff6ff',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+    gap: 3,
+  },
+  guideTitleBlue: {
+    fontSize: 11.5,
+    fontWeight: fontWeights.bold,
+    color: '#1d4ed8',
+    marginBottom: 2,
+  },
+  guideStepBlue: {
+    fontSize: 10.5,
+    color: '#1e40af',
+    lineHeight: 15,
   },
   guideCalloutSky: {
     backgroundColor: '#f0f9ff',
@@ -969,27 +1130,147 @@ const styles = StyleSheet.create({
     color: '#075985',
     lineHeight: 15,
   },
-  guideCalloutBlue: {
-    backgroundColor: '#eff6ff',
+  guideCalloutGreen: {
+    backgroundColor: '#ecfdf5',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#a7f3d0',
     padding: spacing.sm + 2,
     marginBottom: spacing.md,
     gap: 3,
   },
-  guideTitleBlue: {
+  guideTitleGreen: {
     fontSize: 11.5,
     fontWeight: fontWeights.bold,
-    color: '#1d4ed8',
+    color: '#047857',
     marginBottom: 2,
   },
-  guideStepBlue: {
+  guideStepGreen: {
     fontSize: 10.5,
-    color: '#1e40af',
+    color: '#065f46',
     lineHeight: 15,
   },
 
+  /* ── OneDrive Status Cards ── */
+  onedriveStatusConnected: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+    borderWidth: 1,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  onedriveStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  onedriveStatusIconWrapGreen: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onedriveStatusTextCol: {
+    flex: 1,
+  },
+  onedriveBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  onedriveConnectedTitle: {
+    fontSize: 12,
+    fontWeight: fontWeights.extrabold,
+    color: '#064e3b',
+  },
+  readyBadgePill: {
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  readyBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeights.extrabold,
+    color: '#065f46',
+  },
+  onedriveConnectedSubtext: {
+    fontSize: 10.5,
+    color: '#047857',
+    marginTop: 1,
+  },
+  reconnectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  reconnectBtnText: {
+    fontSize: 10.5,
+    fontWeight: fontWeights.bold,
+    color: '#065f46',
+  },
+  onedriveStatusUnlinked: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fde68a',
+    borderWidth: 1,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  onedriveStatusIconWrapAmber: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#d97706',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onedriveUnlinkedTitle: {
+    fontSize: 11.5,
+    fontWeight: fontWeights.bold,
+    color: '#78350f',
+  },
+  onedriveUnlinkedSubtext: {
+    fontSize: 10,
+    color: '#92400e',
+    marginTop: 1,
+    lineHeight: 14,
+  },
+  connectOneDriveBtn: {
+    height: 42,
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  connectOneDriveBtnText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: '#ffffff',
+  },
+
+  /* ── Form Inputs ── */
   inputGroup: {
     marginBottom: spacing.md,
   },
@@ -1013,21 +1294,21 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 4,
     height: 42,
     fontSize: fontSizes.xs,
     color: colors.textPrimary,
   },
   textArea: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: borderRadius.lg,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.xs + 2,
     fontSize: 11,
     color: colors.textPrimary,
@@ -1036,6 +1317,12 @@ const styles = StyleSheet.create({
   },
   fontMono: {
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+  fieldHelperText: {
+    fontSize: 10.5,
+    color: colors.textLight,
+    marginTop: 4,
+    lineHeight: 14,
   },
 
   /* ── Local Info Card ── */

@@ -18,9 +18,14 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   isOnline = false,
 }) => {
   const isGroup = (conversation.type || '').toLowerCase() === 'group';
-  const isActivity = Boolean(conversation.is_activity) || conversation.title === '#activity';
-  const isMaster = Boolean(conversation.is_master) && !isActivity;
-  const isAnnouncement = Boolean(conversation.is_announcement);
+  const isActivity = Boolean(conversation.is_activity) || conversation.title === '#activity' || conversation.title === '# activity';
+  const isCompanyBroadcast = Boolean(
+    conversation.is_company_broadcast ||
+    (conversation.is_announcement && conversation.company_id && !isActivity) ||
+    (conversation.title && conversation.title.toLowerCase().includes('broadcast'))
+  );
+  const isMaster = Boolean(conversation.is_master) && !isActivity && !isCompanyBroadcast;
+  const isAnnouncement = Boolean(conversation.is_announcement) && !isActivity;
 
   const title = isActivity
     ? 'activity'
@@ -36,9 +41,9 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
     >
       <AppAvatar
         name={title}
-        size={44}
+        size={42}
         isActivity={isActivity}
-        isBroadcast={isMaster || isAnnouncement}
+        isBroadcast={isCompanyBroadcast || isMaster || isAnnouncement}
         isGroup={isGroup}
         isOnline={isOnline}
         showPresence={!isGroup}
@@ -48,23 +53,35 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
         <View style={styles.topRow}>
           <View style={styles.titleRow}>
             {isActivity && <Text style={styles.hashPrefix}>#</Text>}
-            <Text style={styles.titleText} numberOfLines={2} ellipsizeMode="tail">
+            <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
               {title}
             </Text>
 
             {isActivity && <AppBadge label="DEFAULT" variant="activity" style={styles.badge} />}
-            {(isMaster || isAnnouncement) && (
-              <AppBadge label="BROADCAST" variant="broadcast" style={styles.badge} />
-            )}
-            {conversation.department_name && !isActivity && (
-              <AppBadge label={`🏢 ${conversation.department_name}`} variant="department" style={styles.badge} />
-            )}
           </View>
 
           <Text style={styles.timeText} numberOfLines={1}>
             {formatTimestamp(conversation.last_message_at || conversation.created_at)}
           </Text>
         </View>
+
+        {/* Second Line Badges for Broadcast & Group Metadata */}
+        {!isActivity && (isCompanyBroadcast || isMaster || isAnnouncement || conversation.company_name || conversation.department_name) && (
+          <View style={styles.badgeRow}>
+            {(isCompanyBroadcast || isMaster || isAnnouncement) && (
+              <AppBadge label="BROADCAST" variant="broadcast" style={styles.badgeSecondLine} />
+            )}
+            {isCompanyBroadcast && (
+              <AppBadge label="Admin Only" variant="warning" style={styles.badgeSecondLine} />
+            )}
+            {conversation.company_name && (
+              <AppBadge label={conversation.company_name} variant="company" style={styles.badgeSecondLine} />
+            )}
+            {conversation.department_name && !isCompanyBroadcast && (
+              <AppBadge label={conversation.department_name} variant="department" style={styles.badgeSecondLine} />
+            )}
+          </View>
+        )}
 
         <View style={styles.bottomRow}>
           {(() => {
@@ -137,7 +154,7 @@ const styles = StyleSheet.create({
   hashPrefix: {
     fontSize: fontSizes.md,
     fontWeight: fontWeights.black,
-    color: '#d97706',
+    color: '#E53E3E',
     marginRight: 2,
     flexShrink: 0,
   },
@@ -150,6 +167,18 @@ const styles = StyleSheet.create({
   badge: {
     marginLeft: spacing.xs,
     flexShrink: 0,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: 2,
+    marginBottom: 4,
+    gap: 4,
+  },
+  badgeSecondLine: {
+    marginRight: 4,
+    marginBottom: 2,
   },
   timeText: {
     fontSize: fontSizes.tiny,

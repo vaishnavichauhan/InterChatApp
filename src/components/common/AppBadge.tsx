@@ -4,7 +4,7 @@ import { colors, fontWeights, borderRadius } from '../../theme';
 
 interface AppBadgeProps {
   label: string;
-  variant?: 'primary' | 'activity' | 'broadcast' | 'success' | 'warning' | 'danger' | 'department';
+  variant?: 'primary' | 'activity' | 'broadcast' | 'success' | 'warning' | 'danger' | 'department' | 'company';
   style?: ViewStyle;
 }
 
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   textBase: {
-    fontSize: 9,
+    fontSize: 6.5,
     fontWeight: fontWeights.extrabold,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -89,6 +89,15 @@ const styles = StyleSheet.create({
   },
   text_department: {
     color: colors.textSecondary,
+    textTransform: 'none',
+  },
+  company: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  text_company: {
+    color: '#1d4ed8',
     textTransform: 'none',
   },
 });

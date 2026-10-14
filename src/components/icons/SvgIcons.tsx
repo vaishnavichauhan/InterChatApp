@@ -208,6 +208,12 @@ export const ChevronDownIcon: React.FC<IconProps> = ({ size = 20, color = '#6474
   </Svg>
 );
 
+export const ChevronUpIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="m18 15-6-6-6 6" />
+  </Svg>
+);
+
 export const ChevronRightIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
     <Path d="m9 18 6-6-6-6" />
@@ -547,7 +553,96 @@ export const PhoneMissedIcon: React.FC<IconProps> = ({ size = 20, color = '#ef44
     <Line x1="17" y1="1" x2="23" y2="7" />
     <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
   </Svg>
+);export const CityIcon: React.FC<IconProps> = ({ size = 20, color = '#2563eb' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M3 21h18" />
+    <Path d="M5 21V7l8-4v18" />
+    <Path d="M13 9.5V21" />
+    <Path d="M19 21V11l-6-4" />
+    <Line x1="9" y1="9" x2="9" y2="9.01" />
+    <Line x1="9" y1="13" x2="9" y2="13.01" />
+    <Line x1="9" y1="17" x2="9" y2="17.01" />
+  </Svg>
 );
 
+export const BuildingOfficeIcon: React.FC<IconProps> = ({ size = 20, color = '#2563eb' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+    <Path d="M9 22v-4h6v4" />
+    <Line x1="8" y1="6" x2="10" y2="6" />
+    <Line x1="14" y1="6" x2="16" y2="6" />
+    <Line x1="8" y1="10" x2="10" y2="10" />
+    <Line x1="14" y1="10" x2="16" y2="10" />
+    <Line x1="8" y1="14" x2="10" y2="14" />
+    <Line x1="14" y1="14" x2="16" y2="14" />
+  </Svg>
+);
+
+export const InfoIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={10} />
+    <Line x1={12} y1={16} x2={12} y2={12} />
+    <Line x1={12} y1={8} x2={12.01} y2={8} />
+  </Svg>
+);
+
+export const MapPinIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <Circle cx="12" cy="10" r="3" />
+  </Svg>
+);
+
+export const GlobeIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={10} />
+    <Line x1={2} y1={12} x2={22} y2={12} />
+    <Path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </Svg>
+);
+
+export const NetworkIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={16} y={16} width={6} height={6} rx={1} />
+    <Rect x={2} y={16} width={6} height={6} rx={1} />
+    <Rect x={9} y={2} width={6} height={6} rx={1} />
+    <Path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" />
+    <Line x1={12} y1={12} x2={12} y2={8} />
+  </Svg>
+);
+
+export const HandshakeIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    <Path d="M12 5v14" />
+  </Svg>
+);
+
+export const UploadCloudIcon: React.FC<IconProps> = ({ size = 20, color = '#059669' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="m16 16-4-4-4 4" />
+    <Path d="M12 12v9" />
+    <Path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+    <Path d="m16 16-4-4-4 4" />
+  </Svg>
+);
+
+export const FileSpreadsheetIcon: React.FC<IconProps> = ({ size = 20, color = '#059669' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+    <Polyline points="14 2 14 8 20 8" />
+    <Path d="M8 13h2" />
+    <Path d="M8 17h2" />
+    <Path d="M14 13h2" />
+    <Path d="M14 17h2" />
+  </Svg>
+);
+
+export const PinIcon: React.FC<IconProps> = ({ size = 16, color = '#d97706' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Line x1="12" y1="17" x2="12" y2="22" />
+    <Path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v5.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z" />
+  </Svg>
+);
 
 

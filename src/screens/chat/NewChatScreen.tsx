@@ -111,6 +111,11 @@ export const NewChatScreen: React.FC<NewChatScreenProps> = ({ navigation }) => {
               <View style={styles.userMeta}>
                 <View style={styles.userNameRow}>
                   <Text style={styles.userName}>{item.name || item.username}</Text>
+                  {item.company_name ? (
+                    <View style={styles.compBadge}>
+                      <Text style={styles.compBadgeText}>🏛️ {item.company_name}</Text>
+                    </View>
+                  ) : null}
                   {item.department_names && (
                     <View style={styles.deptBadge}>
                       <Text style={styles.deptBadgeText}>🏢 {item.department_names}</Text>
@@ -118,7 +123,7 @@ export const NewChatScreen: React.FC<NewChatScreenProps> = ({ navigation }) => {
                   )}
                 </View>
                 <Text style={styles.userEmail} numberOfLines={1}>
-                  {item.email} {item.mobile_number ? `• ${item.mobile_number}` : ''}
+                  {item.email} {item.mob_no || item.mobile_number ? `• ${item.mob_no || item.mobile_number}` : ''}
                 </Text>
               </View>
 
@@ -203,6 +208,19 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
+  },
+  compBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    backgroundColor: '#eff6ff',
+    borderRadius: borderRadius.xs,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  compBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
+    color: '#1d4ed8',
   },
   deptBadge: {
     paddingHorizontal: 6,

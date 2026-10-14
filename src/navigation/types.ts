@@ -21,6 +21,9 @@ export type RootStackParamList = {
   UserMaster: undefined;
   CreateUser: undefined;
   UserTypeMaster: undefined;
+  CompanyMaster: undefined;
+  CreateCompany: undefined;
   DepartmentMaster: undefined;
   CloudStorageMaster: undefined;
+  BulkUserImport: undefined;
 };

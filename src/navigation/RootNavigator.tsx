@@ -12,8 +12,11 @@ import { FileViewerScreen } from '../screens/chat/FileViewerScreen';
 import { UserMasterScreen } from '../screens/admin/UserMasterScreen';
 import { CreateUserScreen } from '../screens/admin/CreateUserScreen';
 import { UserTypeMasterScreen } from '../screens/admin/UserTypeMasterScreen';
+import { CompanyMasterScreen } from '../screens/admin/CompanyMasterScreen';
+import { CreateCompanyScreen } from '../screens/admin/CreateCompanyScreen';
 import { DepartmentMasterScreen } from '../screens/admin/DepartmentMasterScreen';
 import { CloudStorageMasterScreen } from '../screens/admin/CloudStorageMasterScreen';
+import { BulkUserImportScreen } from '../screens/admin/BulkUserImportScreen';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
@@ -79,8 +82,11 @@ export const RootNavigator = () => {
                 <Stack.Screen name="UserMaster" component={UserMasterScreen} />
                 <Stack.Screen name="CreateUser" component={CreateUserScreen} />
                 <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
+                <Stack.Screen name="CompanyMaster" component={CompanyMasterScreen} />
+                <Stack.Screen name="CreateCompany" component={CreateCompanyScreen} />
                 <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
                 <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
+                <Stack.Screen name="BulkUserImport" component={BulkUserImportScreen} />
               </>
             )}
           </Stack.Navigator>

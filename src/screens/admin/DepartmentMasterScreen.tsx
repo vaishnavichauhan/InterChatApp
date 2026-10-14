@@ -399,34 +399,17 @@ export const DepartmentMasterScreen: React.FC<DepartmentMasterScreenProps> = ({
 
             return (
               <View style={[styles.deptCard, shadows.sm]}>
-                {/* ── Card Header: Avatar + Title + Status ── */}
+                {/* ── Card Header: Avatar + Title (with ID) + Status ── */}
                 <View style={styles.cardHeaderRow}>
-                  <View
-                    style={[
-                      styles.avatarBox,
-                      isActive ? styles.avatarBoxActive : styles.avatarBoxInactive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.avatarText,
-                        isActive ? styles.avatarTextActive : styles.avatarTextInactive,
-                      ]}
-                    >
-                      {initials}
-                    </Text>
-                    <View
-                      style={[
-                        styles.avatarStatusBadge,
-                        { backgroundColor: isActive ? '#10b981' : '#94a3b8' },
-                      ]}
-                    />
+                  <View style={styles.avatarBox}>
+                    <Text style={styles.avatarText}>{initials}</Text>
                   </View>
 
                   <View style={styles.deptInfo}>
                     <Text style={styles.deptName} numberOfLines={1}>
                       {item.department_name}
                     </Text>
+                    <Text style={styles.deptIdText}>ID: #{item.id}</Text>
                     {/* ── Created Date Row (Top Side) ── */}
                     <View style={styles.dateRow}>
                       <CalendarIcon size={11} color={colors.textLight} />
@@ -1170,43 +1153,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatarBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#2D333B',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
-    position: 'relative',
-    borderWidth: 1.5,
-  },
-  avatarBoxActive: {
-    backgroundColor: '#fff1f2',
-    borderColor: '#ffe4e6',
-  },
-  avatarBoxInactive: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
   },
   avatarText: {
-    fontSize: 14.5,
-    fontWeight: fontWeights.black,
-    letterSpacing: 0.5,
-  },
-  avatarTextActive: {
-    color: colors.primary,
-  },
-  avatarTextInactive: {
-    color: '#64748b',
-  },
-  avatarStatusBadge: {
-    position: 'absolute',
-    bottom: -1,
-    right: -1,
-    width: 11,
-    height: 11,
-    borderRadius: 5.5,
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    fontSize: 13,
+    fontWeight: fontWeights.bold,
+    color: '#ffffff',
   },
   deptInfo: {
     flex: 1,
@@ -1593,5 +1551,70 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
+  },
+  deptCompanyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  deptCompanyText: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+    color: '#2563eb',
+  },
+  companyFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
+    paddingBottom: 2,
+  },
+  companyFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 5,
+  },
+  companyFilterChipActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#1d4ed8',
+  },
+  companyFilterChipText: {
+    fontSize: fontSizes.tiny,
+    fontWeight: fontWeights.bold,
+    color: colors.textSecondary,
+  },
+  companyFilterChipTextActive: {
+    color: '#ffffff',
+  },
+  companySelectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  companySelectChipActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#1d4ed8',
+  },
+  companySelectChipText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.textSecondary,
+  },
+  companySelectChipTextActive: {
+    color: '#ffffff',
   },
 });

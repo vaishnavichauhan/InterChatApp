@@ -13,6 +13,8 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Keyboard,
+  LayoutAnimation,
+  UIManager,
   type ScrollViewInstance,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -38,11 +40,20 @@ import {
   ArrowRightIcon,
   CloudIcon,
   LayersIcon,
+  CityIcon,
+  FileSpreadsheetIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronRightIcon,
 } from '../../components/icons/SvgIcons';
 import { useAuthStore, isUserAdminRole } from '../../store/authStore';
 import { updateProfile } from '../../api/authApi';
 import { getDashboardStats } from '../../api/adminApi';
 import { getInitials } from '../../utils/formatters';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export const ProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -60,6 +71,12 @@ export const ProfileScreen: React.FC = () => {
   // Admin Dashboard stats
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [isMastersOpen, setIsMastersOpen] = useState(false);
+
+  const toggleMasters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsMastersOpen((prev) => !prev);
+  };
 
   const androidStatusHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
   const topInset = Math.max(insets.top, androidStatusHeight);
@@ -68,7 +85,7 @@ export const ProfileScreen: React.FC = () => {
   const initials = getInitials(user?.name || user?.username || 'U');
 
   // Dashboard wave banner geometry (same for Admin & User)
-  const bannerHeight = 315;
+  const bannerHeight = 290;
   const curveLeftY = bannerHeight - 34;
   const curveRightY = bannerHeight - 64;
   const mainWavePath = `M 0 0 L ${width} 0 L ${width} ${curveRightY} C ${width * 0.70} ${curveRightY - 20}, ${width * 0.35} ${bannerHeight + 10}, 0 ${curveLeftY} Z`;
@@ -123,6 +140,15 @@ export const ProfileScreen: React.FC = () => {
   // Enterprise Administration Masters list
   const masterList = [
     {
+      id: 'company',
+      name: 'Company Master',
+      desc: 'Manage corporate entities & company boundaries',
+      icon: CityIcon,
+      iconColor: '#2563eb',
+      bgColor: '#eff6ff',
+      onPress: () => navigation.navigate('CompanyMaster'),
+    },
+    {
       id: 'department',
       name: 'Department Master',
       desc: 'Manage departments & organizational units',
@@ -139,6 +165,15 @@ export const ProfileScreen: React.FC = () => {
       iconColor: '#059669',
       bgColor: '#ecfdf5',
       onPress: () => navigation.navigate('UserMaster'),
+    },
+     {
+      id: 'bulk_import',
+      name: 'Bulk Employee Import',
+      desc: 'Import users in bulk from Excel / CSV spreadsheet',
+      icon: FileSpreadsheetIcon,
+      iconColor: '#059669',
+      bgColor: '#ecfdf5',
+      onPress: () => navigation.navigate('BulkUserImport'),
     },
     {
       id: 'user_type',
@@ -158,6 +193,7 @@ export const ProfileScreen: React.FC = () => {
       bgColor: '#fffbeb',
       onPress: () => navigation.navigate('CloudStorageMaster'),
     },
+   
   ];
 
   const handleCancelEdit = () => {
@@ -213,7 +249,54 @@ export const ProfileScreen: React.FC = () => {
     >
       <StatusBar barStyle="light-content" />
 
-      {/* ── SCROLLVIEW FOR CONTENT AND TOP HERO BANNER ── */}
+      {/* ── FIXED TOP SECTION (NON-SCROLLING HERO BANNER & AVATAR) ── */}
+      <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
+        <Svg
+          width={width}
+          height={bannerHeight + 30}
+          viewBox={`0 0 ${width} ${bannerHeight + 30}`}
+          style={StyleSheet.absoluteFill}
+        >
+          <Defs>
+            <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={colors.heroGradientStart} />
+              <Stop offset="50%" stopColor={colors.heroGradientMid} />
+              <Stop offset="100%" stopColor={colors.heroGradientEnd} />
+            </LinearGradient>
+            <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
+              <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
+            </LinearGradient>
+          </Defs>
+          {/* Depth back-wave */}
+          <Path d={backWavePath} fill="url(#dashBackWave)" />
+          {/* Main foreground wave */}
+          <Path d={mainWavePath} fill="url(#dashBgGrad)" />
+        </Svg>
+
+        {/* Banner content */}
+        <View style={[styles.bannerContent, { paddingTop: topInset + 16 }]}>
+          {/* Center Avatar (Enlarged) */}
+          <View style={styles.bannerAvatarBox}>
+            <Text style={styles.bannerAvatarText}>{initials}</Text>
+            <View style={styles.bannerAvatarDot} />
+          </View>
+
+          {/* Greeting heading */}
+          <Text style={styles.bannerHeading}>
+            Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
+          </Text>
+
+          {/* Role Badge */}
+          <View style={styles.bannerRoleBadge}>
+            <Text style={styles.bannerRoleText}>
+              {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── SCROLLABLE BOTTOM HALF (HALF SCROLL) ── */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollArea}
@@ -234,53 +317,6 @@ export const ProfileScreen: React.FC = () => {
           ) : undefined
         }
       >
-        {/* ── TOP PART: S-Curve Wave Hero Banner (Full width edge-to-edge) ── */}
-        <View style={[styles.welcomeBanner, { height: bannerHeight, width }]}>
-          <Svg
-            width={width}
-            height={bannerHeight + 30}
-            viewBox={`0 0 ${width} ${bannerHeight + 30}`}
-            style={StyleSheet.absoluteFill}
-          >
-            <Defs>
-              <LinearGradient id="dashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor={colors.heroGradientStart} />
-                <Stop offset="50%" stopColor={colors.heroGradientMid} />
-                <Stop offset="100%" stopColor={colors.heroGradientEnd} />
-              </LinearGradient>
-              <LinearGradient id="dashBackWave" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="rgba(255, 255, 255, 0.28)" />
-                <Stop offset="100%" stopColor="rgba(255, 120, 126, 0.22)" />
-              </LinearGradient>
-            </Defs>
-            {/* Depth back-wave */}
-            <Path d={backWavePath} fill="url(#dashBackWave)" />
-            {/* Main foreground wave */}
-            <Path d={mainWavePath} fill="url(#dashBgGrad)" />
-          </Svg>
-
-          {/* Banner content */}
-          <View style={[styles.bannerContent, { paddingTop: topInset + 6 }]}>
-            {/* Center Avatar (Enlarged) */}
-            <View style={styles.bannerAvatarBox}>
-              <Text style={styles.bannerAvatarText}>{initials}</Text>
-              <View style={styles.bannerAvatarDot} />
-            </View>
-
-            {/* Greeting heading */}
-            <Text style={styles.bannerHeading}>
-              Welcome, {user?.name || user?.username || (isAdmin ? 'Administrator' : 'User')}!
-            </Text>
-
-            {/* Role Badge */}
-            <View style={styles.bannerRoleBadge}>
-              <Text style={styles.bannerRoleText}>
-                {(user?.user_type_name || (isAdmin ? 'ADMIN' : 'USER')).toUpperCase()}
-              </Text>
-            </View>
-          </View>
-        </View>
-
         {/* ── BOTTOM PART: MERGE DASHBOARD & PROFILE ── */}
         <View style={[styles.bodyContainer, { width }]}>
           {isAdmin && !isEditing && (
@@ -362,36 +398,65 @@ export const ProfileScreen: React.FC = () => {
               </ScrollView>
 
               {/* 2. Enterprise Administration Masters Section */}
-              <View style={styles.mastersSectionWrap}>
-                <View style={styles.dropdownTitleRow}>
-                  <View style={styles.dropdownHeaderIconWrap}>
-                    <LayersIcon size={18} color={colors.primary} />
+              <View style={[styles.mastersSectionWrap, shadows.sm]}>
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownHeaderTrigger,
+                    isMastersOpen && styles.dropdownHeaderTriggerOpen,
+                  ]}
+                  onPress={toggleMasters}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.dropdownTitleRow}>
+                    <View style={styles.dropdownHeaderIconWrap}>
+                      <LayersIcon size={18} color={colors.primary} />
+                    </View>
+                    <View style={styles.dropdownTitleTextCol}>
+                      <Text style={styles.sectionHeader}>Enterprise Administration Masters</Text>
+                      <Text style={styles.dropdownSubtitle}>
+                        {isMastersOpen ? 'Tap to collapse' : `${masterList.length} masters available`}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.sectionHeader}>Enterprise Administration Masters</Text>
-                </View>
 
-                <View style={styles.dropdownMenuList}>
-                  {masterList.map((item) => {
-                    const ItemIcon = item.icon;
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        style={[styles.masterCard, shadows.sm]}
-                        onPress={item.onPress}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.masterIcon, { backgroundColor: item.bgColor }]}>
-                          <ItemIcon size={22} color={item.iconColor} />
-                        </View>
-                        <View style={styles.masterMeta}>
-                          <Text style={styles.masterTitle}>{item.name}</Text>
-                          <Text style={styles.masterDesc}>{item.desc}</Text>
-                        </View>
-                        <ArrowRightIcon size={18} color={colors.textLight} />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                  <View style={styles.dropdownChevronWrap}>
+                    <View style={styles.chevronIconWrap}>
+                      {isMastersOpen ? (
+                        <ChevronUpIcon size={18} color={colors.primary} />
+                      ) : (
+                        <ChevronDownIcon size={18} color="#64748b" />
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                {isMastersOpen && (
+                  <View style={styles.dropdownMenuList}>
+                    {masterList.map((item, index) => {
+                      const ItemIcon = item.icon;
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={[
+                            styles.dropdownMenuItem,
+                            index < masterList.length - 1 && styles.dropdownMenuItemBorder,
+                          ]}
+                          onPress={item.onPress}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.menuItemIconWrap, { backgroundColor: item.bgColor }]}>
+                            <ItemIcon size={19} color={item.iconColor} />
+                          </View>
+                          <View style={styles.menuItemTextCol}>
+                            <Text style={styles.menuItemTitle}>{item.name}</Text>
+                            <Text style={styles.menuItemDesc} numberOfLines={1}>{item.desc}</Text>
+                          </View>
+                          <ChevronRightIcon size={16} color="#94a3b8" />
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
               </View>
             </>
           )}
@@ -580,7 +645,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.logoutCardBtnText}>Sign Out of Device</Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Inter_Chat Version 2.01.10</Text>
+          <Text style={styles.versionText}>Inter_Chat Version 01.13.10</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -628,6 +693,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+    marginTop: spacing.md,
     marginBottom: 6,
     position: 'relative',
     shadowColor: '#000000',
@@ -696,6 +762,7 @@ const styles = StyleSheet.create({
   /* ── BODY CONTAINER ── */
   bodyContainer: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
 
   /* ── 4 KPI HORIZONTAL SWIPE (DASHBOARD) ── */
@@ -764,23 +831,61 @@ const styles = StyleSheet.create({
 
   /* ── MASTERS SECTION (DASHBOARD) ── */
   mastersSectionWrap: {
+    backgroundColor: '#ffffff',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     marginBottom: spacing.xl,
+    overflow: 'hidden',
+  },
+  dropdownHeaderTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+  },
+  dropdownHeaderTriggerOpen: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
   dropdownTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    marginTop: spacing.xs,
     flex: 1,
+    marginRight: 8,
   },
   dropdownHeaderIconWrap: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     backgroundColor: '#e0efff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+  },
+  dropdownTitleTextCol: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dropdownSubtitle: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  dropdownChevronWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chevronIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionHeader: {
     fontSize: fontSizes.md,
@@ -788,40 +893,41 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   dropdownMenuList: {
-    marginTop: 2,
+    backgroundColor: '#ffffff',
+    paddingVertical: 4,
   },
-  masterCard: {
+  dropdownMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
   },
-  masterIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.md,
+  dropdownMenuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  menuItemIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: 12,
   },
-  masterMeta: {
+  menuItemTextCol: {
     flex: 1,
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
-  masterTitle: {
-    fontSize: fontSizes.sm,
+  menuItemTitle: {
+    fontSize: 14,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
     marginBottom: 2,
   },
-  masterDesc: {
-    fontSize: fontSizes.tiny,
+  menuItemDesc: {
+    fontSize: 11,
     color: colors.textMuted,
-    lineHeight: 16,
+    lineHeight: 15,
   },
 
   /* ── PERSONAL DETAILS SECTION ── */

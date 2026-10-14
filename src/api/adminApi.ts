@@ -66,3 +66,11 @@ export const saveStorageConfig = async (data: any) => {
 export const testStorageConnection = async (data: any) => {
   return apiClient.post('/admin/storage-config/test', data);
 };
+
+export const getOneDriveAuthUrl = async (params: { clientId: string; clientSecret?: string; redirectUri?: string }) => {
+  return apiClient.get('/admin/storage-config/onedrive/auth-url', { params });
+};
+
+export const bulkImportUsers = async (data: any) => {
+  return apiClient.post('/admin/users/bulk-import', data);
+};

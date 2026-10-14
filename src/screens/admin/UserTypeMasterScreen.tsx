@@ -34,6 +34,7 @@ import {
   CrownIcon,
   RefreshIcon,
   BuildingIcon,
+  BuildingOfficeIcon,
   LockIcon,
   MessagesSquareIcon,
   CameraIcon,
@@ -43,6 +44,8 @@ import {
   ChartIcon,
   CloudIcon,
   DownloadIcon,
+  HandshakeIcon,
+  CityIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getUserTypes,
@@ -52,47 +55,62 @@ import {
 } from '../../api/adminApi';
 import { colors, fontSizes, fontWeights, spacing, borderRadius, shadows } from '../../theme';
 
-// ─── Permission Configs ───────────────────────────────────────────────────────
+// ─── 13 Master Permission Configs (100% Web Parity) ───────────────────────────
 const PERMISSION_CONFIGS = [
   {
     category: 'Department & Administrative Governance',
-    description: 'Authority to manage department users, edit client permissions, and view audit trails',
+    description: 'Administrative authority to manage department users, edit client permissions, and audit logs',
+    icon: (c: string) => <ShieldUserIcon size={18} color={c} />,
+    color: '#7c3aed',
     tier: 'admin',
     items: [
       {
         key: 'user_master',
         title: 'Manage Department Users & Client Permissions',
-        badge: '🛡️ Client Perms',
+        description: 'Allows Department Admins to edit client permissions, manage user profiles, and oversee department members.',
+        badge: 'Client Perms',
+        requiresAdmin: true,
+      },
+      {
+        key: 'company_master',
+        title: 'Company Master & Multi-Company Hierarchy',
+        description: 'Allows viewing, creating, and managing corporate entities and company boundaries.',
+        badge: 'Company Master',
         requiresAdmin: true,
       },
       {
         key: 'department_master',
-        title: 'Department Master & Boundaries',
-        badge: '🏢 Depts',
+        title: 'Department Master & Boundary Control',
+        description: 'Allows viewing and managing organizational departments and department boundaries.',
+        badge: 'Dept Master',
         requiresAdmin: true,
       },
       {
         key: 'user_type',
         title: 'User Role & Permission Master',
-        badge: '👑 Roles',
+        description: 'Allows configuring, creating, and customizing role permission profiles.',
+        badge: 'Role Master',
         requiresAdmin: true,
       },
       {
         key: 'device_approval',
-        title: 'Device Approval & Security Keys',
-        badge: '📱 Devices',
+        title: 'Hardware Device Approval & Verification',
+        description: 'Allows approving or revoking new login devices and security access keys.',
+        badge: 'Device Security',
         requiresAdmin: true,
       },
       {
         key: 'activity_report',
         title: 'Activity Logs & Security Audit Trail',
-        badge: '📊 Audit Logs',
+        description: 'Allows viewing system logs, login sessions, and departmental audit histories.',
+        badge: 'Audit Logs',
         requiresAdmin: true,
       },
       {
         key: 'cloud_storage',
         title: 'Cloud Storage Master',
-        badge: '☁️ Storage',
+        description: 'Allows configuring Microsoft Azure, Google Drive, and cloud storage providers.',
+        badge: 'Cloud Storage',
         requiresAdmin: true,
       },
     ],
@@ -100,24 +118,29 @@ const PERMISSION_CONFIGS = [
   {
     category: 'Communication & Messaging Channels',
     description: 'Control direct messaging, live photo capture, and department group channels',
+    icon: (c: string) => <MessagesSquareIcon size={18} color={c} />,
+    color: '#0284c7',
     tier: 'common',
     items: [
       {
         key: 'chat',
         title: 'Send Messages (Chat Access)',
-        badge: '💬 Chat',
+        description: 'Allows user to compose and send messages in direct 1-to-1 chats and team channels.',
+        badge: 'Chat Access',
         requiresAdmin: false,
       },
       {
         key: 'camera_access',
         title: 'Live Camera & Instant Photo Capture',
-        badge: '📷 Camera',
+        description: 'Allows user to capture and share live photos directly from camera.',
+        badge: 'Live Camera',
         requiresAdmin: false,
       },
       {
         key: 'group_create',
         title: 'Create Department Group Channels',
-        badge: '👥 Groups',
+        description: 'Allows user to create new scoped channels and group chats within their department.',
+        badge: 'Group Channels',
         requiresAdmin: false,
       },
     ],
@@ -125,24 +148,29 @@ const PERMISSION_CONFIGS = [
   {
     category: 'Document & File Security',
     description: 'Control in-app file previewing, attachments upload, and local downloading',
+    icon: (c: string) => <EyeIcon size={18} color={c} />,
+    color: '#059669',
     tier: 'common',
     items: [
       {
         key: 'document_view',
         title: 'File & Document Preview (In-App Protected View)',
-        badge: '👁️ In-App View',
+        description: 'Allows user to securely preview PDFs, Word docs, Excel sheets, and images inside the app.',
+        badge: 'Preview Files',
         requiresAdmin: false,
       },
       {
         key: 'document_upload',
         title: 'File Sharing & Attachments Upload',
-        badge: '📎 Upload',
+        description: 'Allows user to attach documents, spreadsheets, photos, and files in conversations.',
+        badge: 'Upload Files',
         requiresAdmin: false,
       },
       {
         key: 'document_download',
         title: 'Download Files to Local Storage',
-        badge: '📥 Download',
+        description: 'Allows user to export and save shared files directly to their physical device storage.',
+        badge: 'Download Files',
         requiresAdmin: false,
       },
     ],
@@ -161,6 +189,13 @@ const CAPABILITY_TILES: Record<
     color: '#7c3aed',
     bg: '#f5f3ff',
     border: '#ddd6fe',
+  },
+  company_master: {
+    label: 'Companies',
+    icon: (c) => <BuildingOfficeIcon size={20} color={c} />,
+    color: '#2563eb',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
   },
   department_master: {
     label: 'Departments',
@@ -241,10 +276,12 @@ const CAPABILITY_TILES: Record<
   },
 };
 
+// ─── 1-Click Role Presets Matching Web Frontend ──────────────────────────────
 const ROLE_PRESETS = [
   {
     name: 'Super Admin',
     categoryTier: 'ADMIN',
+    authorityKey: 'SUPER_ADMIN',
     badge: 'Global Full Access',
     color: '#faf5ff',
     borderColor: '#e9d5ff',
@@ -254,12 +291,14 @@ const ROLE_PRESETS = [
   {
     name: 'Department Admin',
     categoryTier: 'ADMIN',
+    authorityKey: 'DEPT_ADMIN',
     badge: 'Dept Admin',
     color: colors.primarySubtle,
     borderColor: colors.primaryMuted,
     textColor: colors.primary,
     activeKeys: [
       'user_master',
+      'company_master',
       'department_master',
       'device_approval',
       'activity_report',
@@ -274,6 +313,7 @@ const ROLE_PRESETS = [
   {
     name: 'User',
     categoryTier: 'USER',
+    authorityKey: 'DEPT_USER',
     badge: 'Department User',
     color: '#ecfdf5',
     borderColor: '#a7f3d0',
@@ -286,6 +326,16 @@ const ROLE_PRESETS = [
       'document_download',
     ],
   },
+  {
+    name: 'Vendor / Partner',
+    categoryTier: 'USER',
+    authorityKey: 'VENDOR',
+    badge: 'Vendor Partner',
+    color: '#fffbeb',
+    borderColor: '#fde68a',
+    textColor: '#b45309',
+    activeKeys: ['chat', 'document_view', 'document_upload'],
+  },
 ];
 
 interface UserTypeMasterScreenProps {
@@ -297,7 +347,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tierFilter, setTierFilter] = useState<'all' | 'ADMIN' | 'USER'>('all');
+  const [tierFilter, setTierFilter] = useState<'all' | 'ADMIN' | 'USER' | 'VENDOR'>('all');
   const [isTierDropdownOpen, setIsTierDropdownOpen] = useState(false);
 
   // Edit / Create Modal state
@@ -305,7 +355,11 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [typeName, setTypeName] = useState('');
+  const [selectedAuthority, setSelectedAuthority] = useState<
+    'SUPER_ADMIN' | 'DEPT_ADMIN' | 'DEPT_USER' | 'VENDOR'
+  >('DEPT_USER');
   const [modalRoleTier, setModalRoleTier] = useState<'ADMIN' | 'USER'>('USER');
+  const [isVendor, setIsVendor] = useState(false);
   const [activeToggles, setActiveToggles] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
@@ -339,11 +393,14 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
       (r.permissions || []).some(
         (p: any) =>
           (p.canRead || p.canWrite) &&
-          ['user_master', 'department_master', 'user_type'].includes(p.masterName)
+          ['user_master', 'department_master', 'user_type', 'company_master'].includes(p.masterName)
       )
     ).length;
+    const vendorRoles = data.filter((r) =>
+      Boolean(r.is_vendor) || (r.type_name || '').toLowerCase().includes('vendor')
+    ).length;
     const userRoles = total - adminRoles;
-    return { total, adminRoles, userRoles };
+    return { total, adminRoles, userRoles, vendorRoles };
   }, [data]);
 
   // Filtered List
@@ -359,15 +416,18 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
 
       if (!matchesSearch) return false;
 
-      if (tierFilter === 'all') return true;
-
+      const isVendorRole =
+        Boolean(row.is_vendor) || (row.type_name || '').toLowerCase().includes('vendor');
       const hasAdminPerm = (row.permissions || []).some(
         (p: any) =>
           (p.canRead || p.canWrite) &&
-          ['user_master', 'department_master', 'user_type'].includes(p.masterName)
+          ['user_master', 'department_master', 'user_type', 'company_master'].includes(p.masterName)
       );
 
-      return tierFilter === 'ADMIN' ? hasAdminPerm : !hasAdminPerm;
+      if (tierFilter === 'all') return true;
+      if (tierFilter === 'VENDOR') return isVendorRole;
+      if (tierFilter === 'ADMIN') return hasAdminPerm && !isVendorRole;
+      return !hasAdminPerm && !isVendorRole;
     });
   }, [data, searchQuery, tierFilter]);
 
@@ -376,10 +436,18 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     setModalMode('create');
     setSelectedId(null);
     setTypeName('');
+    setSelectedAuthority('DEPT_USER');
     setModalRoleTier('USER');
+    setIsVendor(false);
     const initialToggles: Record<string, boolean> = {};
     ALL_MASTER_KEYS.forEach((k) => {
-      initialToggles[k] = ['chat', 'camera_access', 'document_view', 'document_upload', 'document_download'].includes(k);
+      initialToggles[k] = [
+        'chat',
+        'camera_access',
+        'document_view',
+        'document_upload',
+        'document_download',
+      ].includes(k);
     });
     setActiveToggles(initialToggles);
     setIsModalOpen(true);
@@ -391,12 +459,27 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     setSelectedId(row.id);
     setTypeName(row.type_name || '');
 
+    const isVendorRole =
+      Boolean(row.is_vendor) || (row.type_name || '').toLowerCase().includes('vendor');
+    setIsVendor(isVendorRole);
+
     const hasAdminPerm = (row.permissions || []).some(
       (p: any) =>
         (p.canRead || p.canWrite) &&
-        ['user_master', 'department_master', 'user_type'].includes(p.masterName)
+        ['user_master', 'department_master', 'user_type', 'company_master'].includes(p.masterName)
     );
     setModalRoleTier(hasAdminPerm ? 'ADMIN' : 'USER');
+
+    const nameLower = (row.type_name || '').toLowerCase();
+    if (isVendorRole) {
+      setSelectedAuthority('VENDOR');
+    } else if (nameLower.includes('super admin')) {
+      setSelectedAuthority('SUPER_ADMIN');
+    } else if (hasAdminPerm) {
+      setSelectedAuthority('DEPT_ADMIN');
+    } else {
+      setSelectedAuthority('DEPT_USER');
+    }
 
     const toggles: Record<string, boolean> = {};
     ALL_MASTER_KEYS.forEach((k) => {
@@ -415,45 +498,104 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     }));
   };
 
-  // Switch Tier
-  const handleSelectRoleTier = (tier: 'ADMIN' | 'USER') => {
-    setModalRoleTier(tier);
-    if (tier === 'ADMIN') {
-      setActiveToggles((prev) => ({
-        ...prev,
-        user_master: true,
-        department_master: true,
-        device_approval: true,
-        activity_report: true,
-        chat: true,
-        camera_access: true,
-        group_create: true,
-        document_view: true,
-        document_upload: true,
-        document_download: true,
-      }));
+  // Switch Role Authority Tier (Matching Web Step 1)
+  const handleSelectAuthority = (tierKey: 'SUPER_ADMIN' | 'DEPT_ADMIN' | 'DEPT_USER' | 'VENDOR') => {
+    setSelectedAuthority(tierKey);
+    if (tierKey === 'SUPER_ADMIN') {
+      setIsVendor(false);
+      setModalRoleTier('ADMIN');
+      const updated: Record<string, boolean> = {};
+      ALL_MASTER_KEYS.forEach((k) => {
+        updated[k] = true;
+      });
+      setActiveToggles(updated);
+      if (
+        !typeName ||
+        typeName === 'Department Admin' ||
+        typeName === 'Department User' ||
+        typeName === 'Vendor / External Partner'
+      ) {
+        setTypeName('Super Admin');
+      }
+    } else if (tierKey === 'DEPT_ADMIN') {
+      setIsVendor(false);
+      setModalRoleTier('ADMIN');
+      const deptAdminKeys = [
+        'user_master',
+        'company_master',
+        'department_master',
+        'device_approval',
+        'activity_report',
+        'chat',
+        'camera_access',
+        'group_create',
+        'document_view',
+        'document_upload',
+        'document_download',
+      ];
+      const updated: Record<string, boolean> = {};
+      ALL_MASTER_KEYS.forEach((k) => {
+        updated[k] = deptAdminKeys.includes(k);
+      });
+      setActiveToggles(updated);
+      if (
+        !typeName ||
+        typeName === 'Super Admin' ||
+        typeName === 'Department User' ||
+        typeName === 'Vendor / External Partner'
+      ) {
+        setTypeName('Department Admin');
+      }
+    } else if (tierKey === 'VENDOR') {
+      setIsVendor(true);
+      setModalRoleTier('USER');
+      const vendorKeys = ['chat', 'document_view', 'document_upload'];
+      const updated: Record<string, boolean> = {};
+      ALL_MASTER_KEYS.forEach((k) => {
+        updated[k] = vendorKeys.includes(k);
+      });
+      setActiveToggles(updated);
+      if (
+        !typeName ||
+        typeName === 'Super Admin' ||
+        typeName === 'Department Admin' ||
+        typeName === 'Department User'
+      ) {
+        setTypeName('Vendor / External Partner');
+      }
     } else {
-      setActiveToggles((prev) => ({
-        ...prev,
-        user_master: false,
-        department_master: false,
-        user_type: false,
-        device_approval: false,
-        activity_report: false,
-        cloud_storage: false,
-        chat: true,
-        camera_access: true,
-        group_create: true,
-        document_view: true,
-        document_upload: true,
-        document_download: true,
-      }));
+      setIsVendor(false);
+      setModalRoleTier('USER');
+      const userKeys = [
+        'chat',
+        'camera_access',
+        'document_view',
+        'document_upload',
+        'document_download',
+      ];
+      const updated: Record<string, boolean> = {};
+      ALL_MASTER_KEYS.forEach((k) => {
+        updated[k] = userKeys.includes(k);
+      });
+      setActiveToggles(updated);
+      if (
+        !typeName ||
+        typeName === 'Super Admin' ||
+        typeName === 'Department Admin' ||
+        typeName === 'Vendor / External Partner'
+      ) {
+        setTypeName('Department User');
+      }
     }
   };
 
   // Apply Preset
   const applyPreset = (preset: typeof ROLE_PRESETS[0]) => {
     setModalRoleTier(preset.categoryTier as any);
+    setSelectedAuthority(preset.authorityKey as any);
+    setIsVendor(preset.authorityKey === 'VENDOR');
+    setTypeName(preset.name);
+
     const updated: Record<string, boolean> = {};
     ALL_MASTER_KEYS.forEach((k) => {
       updated[k] = preset.activeKeys.includes(k);
@@ -481,6 +623,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
       const isEnabled = Boolean(activeToggles[key]);
       const isAdminMaster = [
         'user_master',
+        'company_master',
         'department_master',
         'user_type',
         'cloud_storage',
@@ -502,12 +645,14 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
         await createUserType({
           typeName: typeName.trim(),
           permissions,
+          isVendor: Boolean(isVendor),
         });
         Alert.alert('Success', `Role profile "${typeName.trim()}" created successfully.`);
       } else if (selectedId) {
         await updateUserType(selectedId, {
           typeName: typeName.trim(),
           permissions,
+          isVendor: Boolean(isVendor),
         });
         Alert.alert('Success', `Role profile "${typeName.trim()}" updated successfully.`);
       }
@@ -546,7 +691,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     );
   };
 
-  // Render capability badges for each card as small square cards with icon and text
+  // Render capability badges for each card
   const renderCapabilityBadges = (permissions: any[]) => {
     if (!permissions || permissions.length === 0) {
       return (
@@ -586,17 +731,9 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           };
 
           return (
-            <View
-              key={item.key}
-              style={styles.capabilitySquareCard}
-            >
-              <View style={styles.squareCardIconWrap}>
-                {tile.icon(tile.color)}
-              </View>
-              <Text
-                style={[styles.squareCardLabel, { color: tile.color }]}
-                numberOfLines={1}
-              >
+            <View key={item.key} style={styles.capabilitySquareCard}>
+              <View style={styles.squareCardIconWrap}>{tile.icon(tile.color)}</View>
+              <Text style={[styles.squareCardLabel, { color: tile.color }]} numberOfLines={1}>
                 {tile.label}
               </Text>
             </View>
@@ -606,23 +743,79 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     );
   };
 
-  // Header Component for List
   const renderListHeader = () => (
     <View style={styles.listHeaderContainer}>
-      {/* ── Search Bar & Authority Tier Filter Row ── */}
+      {/* Top Title Banner */}
+      <View style={styles.topActionBar}>
+        <View style={styles.topActionLeft}>
+          <Text style={styles.screenHeading}>User Role Profiles</Text>
+          <Text style={styles.screenSubheading}>
+            Granular permission authority, device security & access policies
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.createRoleBtn}
+          onPress={handleOpenCreate}
+          activeOpacity={0.85}
+        >
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={StyleSheet.absoluteFill}
+          >
+            <Defs>
+              <LinearGradient id="createRoleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <Stop offset="0%" stopColor={colors.buttonGradientStart} />
+                <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100" height="100" fill="url(#createRoleGrad)" />
+          </Svg>
+          <View style={styles.createRoleBtnInner}>
+            <View style={styles.createRoleIconCircle}>
+              <PlusIcon size={12} color={colors.buttonPrimary} />
+            </View>
+            <Text style={styles.createRoleBtnText}>Create Role</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* KPI Stats Row */}
+      <View style={styles.kpiRow}>
+        <View style={[styles.kpiCard, { borderColor: '#e2e8f0' }]}>
+          <Text style={styles.kpiLabel}>TOTAL ROLES</Text>
+          <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{stats.total}</Text>
+        </View>
+        <View style={[styles.kpiCard, { borderColor: '#ddd6fe' }]}>
+          <Text style={styles.kpiLabel}>ADMIN TIERS</Text>
+          <Text style={[styles.kpiValue, { color: '#7c3aed' }]}>{stats.adminRoles}</Text>
+        </View>
+        <View style={[styles.kpiCard, { borderColor: '#a7f3d0' }]}>
+          <Text style={styles.kpiLabel}>USER TIERS</Text>
+          <Text style={[styles.kpiValue, { color: '#059669' }]}>{stats.userRoles}</Text>
+        </View>
+        <View style={[styles.kpiCard, { borderColor: '#fde68a' }]}>
+          <Text style={styles.kpiLabel}>VENDORS</Text>
+          <Text style={[styles.kpiValue, { color: '#b45309' }]}>{stats.vendorRoles}</Text>
+        </View>
+      </View>
+
+      {/* Search and Tier Filter */}
       <View style={styles.searchFilterRow}>
         <View style={styles.searchBar}>
-          <SearchIcon size={16} color={colors.textMuted} />
+          <SearchIcon size={16} color="#94a3b8" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search roles by title or capability..."
-            placeholderTextColor={colors.textLight}
+            placeholder="Search roles or capabilities..."
+            placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <XMarkIcon size={16} color={colors.textMuted} />
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <XMarkIcon size={14} color="#94a3b8" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -632,15 +825,29 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           onPress={() => setIsTierDropdownOpen(true)}
           activeOpacity={0.7}
         >
-          <Text style={styles.tierDropdownText} numberOfLines={1}>
+          <Text style={styles.tierDropdownText}>
             {tierFilter === 'all'
               ? 'All Tiers'
               : tierFilter === 'ADMIN'
-              ? 'Admin Tier'
-              : 'User Tier'}
+              ? 'Admin'
+              : tierFilter === 'VENDOR'
+              ? 'Vendor'
+              : 'User'}
           </Text>
-          <ChevronDownIcon size={13} color={colors.textSecondary} />
+          <ChevronDownIcon size={14} color="#64748b" />
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.sectionHeaderRow}>
+        <View>
+          <Text style={styles.sectionTitle}>CONFIGURED ROLE PROFILES</Text>
+          <Text style={styles.sectionSubtitle}>
+            Custom feature matrices assigned to enterprise members
+          </Text>
+        </View>
+        <View style={styles.roleCountBadge}>
+          <Text style={styles.roleCountText}>{filteredData.length} Profiles</Text>
+        </View>
       </View>
     </View>
   );
@@ -649,38 +856,9 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
     <View style={styles.container}>
       <AppHeader
         title="User Type Master"
-        titleAlign="left"
         showBack
+        rightAction
         onBack={() => navigation.goBack()}
-        rightAction={
-          <TouchableOpacity
-            style={[styles.createRoleBtn, shadows.md]}
-            onPress={handleOpenCreate}
-            activeOpacity={0.85}
-          >
-            <Svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              style={StyleSheet.absoluteFill}
-            >
-              <Defs>
-                <LinearGradient id="createRoleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <Stop offset="0%" stopColor={colors.buttonGradientStart} />
-                  <Stop offset="100%" stopColor={colors.buttonGradientEnd} />
-                </LinearGradient>
-              </Defs>
-              <Rect x="0" y="0" width="100" height="100" fill="url(#createRoleGrad)" />
-            </Svg>
-            <View style={styles.createRoleBtnInner}>
-              <View style={styles.createRoleIconCircle}>
-                <PlusIcon size={12} color={colors.buttonPrimary} />
-              </View>
-              <Text style={styles.createRoleBtnText}>Create Role</Text>
-            </View>
-          </TouchableOpacity>
-        }
       />
 
       {loading ? (
@@ -699,10 +877,12 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
             const permissions = item.permissions || [];
+            const isVendorRole =
+              Boolean(item.is_vendor) || (item.type_name || '').toLowerCase().includes('vendor');
             const hasAdminPerm = permissions.some(
               (p: any) =>
                 (p.canRead || p.canWrite) &&
-                ['user_master', 'department_master', 'user_type'].includes(p.masterName)
+                ['user_master', 'department_master', 'user_type', 'company_master'].includes(p.masterName)
             );
             const enabledKeys = new Set(
               permissions.filter((p: any) => p.canRead || p.canWrite).map((p: any) => p.masterName)
@@ -710,25 +890,37 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
             const activeCount = PERMISSION_CONFIGS.flatMap((c) => c.items).filter((i) =>
               enabledKeys.has(i.key)
             ).length;
-            const isFullAccess = ALL_MASTER_KEYS.length > 0 && ALL_MASTER_KEYS.every((k) => enabledKeys.has(k));
+            const isFullAccess =
+              ALL_MASTER_KEYS.length > 0 && ALL_MASTER_KEYS.every((k) => enabledKeys.has(k));
 
             return (
               <View style={[styles.roleCard, shadows.sm]}>
-                {/* ── Card Header: #ID, Role Title & Tier Pill ── */}
                 {/* ── Tier Badge: Top-right corner ── */}
                 <View
                   style={[
                     styles.tierBadgeCorner,
-                    hasAdminPerm ? styles.tierBadgeAdmin : styles.tierBadgeUser,
+                    isVendorRole
+                      ? styles.tierBadgeVendor
+                      : hasAdminPerm
+                      ? styles.tierBadgeAdmin
+                      : styles.tierBadgeUser,
                   ]}
                 >
                   <Text
                     style={[
                       styles.tierBadgeText,
-                      hasAdminPerm ? styles.tierBadgeTextAdmin : styles.tierBadgeTextUser,
+                      isVendorRole
+                        ? styles.tierBadgeTextVendor
+                        : hasAdminPerm
+                        ? styles.tierBadgeTextAdmin
+                        : styles.tierBadgeTextUser,
                     ]}
                   >
-                    {hasAdminPerm ? 'Admin Tier' : 'User Tier'}
+                    {isVendorRole
+                      ? 'Vendor Partner'
+                      : hasAdminPerm
+                      ? 'Admin Tier'
+                      : 'User Tier'}
                   </Text>
                 </View>
 
@@ -752,7 +944,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                     <View style={styles.countBadge}>
                       <Text style={styles.countBadgeText}>
                         {isFullAccess
-                          ? '12/12 FULL ACCESS'
+                          ? '13/13 FULL ACCESS'
                           : activeCount > 0
                           ? `${activeCount} ACTIVE`
                           : 'RESTRICTED'}
@@ -762,7 +954,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                   {renderCapabilityBadges(item.permissions)}
                 </View>
 
-                {/* ── Card Footer Actions (Edit & Delete - Symbol Only) ── */}
+                {/* ── Card Footer Actions (Edit & Delete) ── */}
                 <View style={styles.cardFooterRow}>
                   <Text style={styles.addedByText} numberOfLines={1}>
                     Added by {item.added_by_name || 'Admin User'}
@@ -805,8 +997,10 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
         />
       )}
 
-      {/* ── CREATE / EDIT ROLE MODAL ── */}
-      <Modal visible={isModalOpen} transparent animationType="fade">
+      {/* ════════════════════════════════════════════════════════════════
+          CREATE / EDIT ROLE MODAL (COMPLETE WEB PARITY)
+      ════════════════════════════════════════════════════════════════ */}
+      <Modal visible={isModalOpen} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalContent, shadows.lg]}>
             {/* Modal Header */}
@@ -815,78 +1009,209 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                 <View style={styles.modalHeaderIcon}>
                   <ShieldUserIcon size={18} color={colors.primary} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.modalTitle}>
                     {modalMode === 'create' ? 'Create New Role Profile' : 'Edit Role & Permissions'}
                   </Text>
-                  {/* <Text style={styles.modalSubtitle} >
+                  <Text style={styles.modalSubtitle}>
                     {modalMode === 'create'
-                      ? 'Establish access tier and authority capabilities'
+                      ? 'Step 1: Role Authority Tier • Step 2: Fine-Grained Permissions'
                       : `Customize fine-grained authority toggles for "${typeName}"`}
-                  </Text> */}
+                  </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setIsModalOpen(false)}>
+              <TouchableOpacity
+                onPress={() => setIsModalOpen(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <XMarkIcon size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScrollArea}>
-              {/* Persona Tier Selector (2 Cards) */}
-              <Text style={styles.formSectionHeading}>1. SELECT AUTHORITY TIER</Text>
-              <View style={styles.tierSelectorRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.tierSelectCard,
-                    modalRoleTier === 'ADMIN' && styles.tierSelectCardActiveAdmin,
-                  ]}
-                  onPress={() => handleSelectRoleTier('ADMIN')}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.tierSelectIconBox,
-                      { backgroundColor: modalRoleTier === 'ADMIN' ? colors.primary : '#f5f3ff' },
-                    ]}
-                  >
-                    <ShieldUserIcon
-                      size={16}
-                      color={modalRoleTier === 'ADMIN' ? '#ffffff' : '#7c3aed'}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tierSelectTitle}>Department Admin</Text>
-                    <Text style={styles.tierSelectSub}>Manages users & permissions</Text>
-                  </View>
-                </TouchableOpacity>
+              {/* ── STEP 1: 4 ROLE AUTHORITY TIER CARDS (100% Web Parity) ── */}
+              <View style={{ marginBottom: 14 }}>
+                <Text style={styles.formSectionHeading}>1. SELECT ROLE AUTHORITY TIER</Text>
+                <Text style={styles.formSectionSub}>
+                  Establish security boundary and organizational authorization tier
+                </Text>
 
-                <TouchableOpacity
-                  style={[
-                    styles.tierSelectCard,
-                    modalRoleTier === 'USER' && styles.tierSelectCardActiveUser,
-                  ]}
-                  onPress={() => handleSelectRoleTier('USER')}
-                  activeOpacity={0.7}
-                >
-                  <View
+                <View style={styles.authorityCardsGrid}>
+                  {/* Card 1: Organization Super Admin */}
+                  <TouchableOpacity
                     style={[
-                      styles.tierSelectIconBox,
-                      { backgroundColor: modalRoleTier === 'USER' ? '#059669' : '#ecfdf5' },
+                      styles.authorityCard,
+                      selectedAuthority === 'SUPER_ADMIN' && styles.authorityCardSuperActive,
                     ]}
+                    onPress={() => handleSelectAuthority('SUPER_ADMIN')}
+                    activeOpacity={0.7}
                   >
-                    <UsersIcon
-                      size={16}
-                      color={modalRoleTier === 'USER' ? '#ffffff' : '#059669'}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tierSelectTitle}>User / Client</Text>
-                    <Text style={styles.tierSelectSub}>Standard operational scope</Text>
-                  </View>
-                </TouchableOpacity>
+                    <View style={styles.authorityTopRow}>
+                      <View style={[styles.authorityIconBox, { backgroundColor: '#f3e8ff' }]}>
+                        <CrownIcon size={16} color="#7e22ce" />
+                      </View>
+                      <View style={[styles.authorityPill, { backgroundColor: '#f3e8ff' }]}>
+                        <Text style={[styles.authorityPillText, { color: '#6b21a8' }]}>Global Admin</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.authorityTitle}>Organization Super Admin</Text>
+                    <Text style={styles.authorityDesc}>
+                      Unrestricted full authority across all departments, user permissions, device security, and system audit logs.
+                    </Text>
+                    <View style={styles.authorityStatusRow}>
+                      <View
+                        style={[
+                          styles.radioCircleAuth,
+                          selectedAuthority === 'SUPER_ADMIN' && { borderColor: '#7e22ce' },
+                        ]}
+                      >
+                        {selectedAuthority === 'SUPER_ADMIN' && (
+                          <View style={[styles.radioInnerAuth, { backgroundColor: '#7e22ce' }]} />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.authorityStatusText,
+                          selectedAuthority === 'SUPER_ADMIN' && { color: '#6b21a8' },
+                        ]}
+                      >
+                        {selectedAuthority === 'SUPER_ADMIN' ? 'Selected Authority' : 'Click to select'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Card 2: Department-wise Admin */}
+                  <TouchableOpacity
+                    style={[
+                      styles.authorityCard,
+                      selectedAuthority === 'DEPT_ADMIN' && styles.authorityCardAdminActive,
+                    ]}
+                    onPress={() => handleSelectAuthority('DEPT_ADMIN')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.authorityTopRow}>
+                      <View style={[styles.authorityIconBox, { backgroundColor: '#e0e7ff' }]}>
+                        <ShieldUserIcon size={16} color="#4338ca" />
+                      </View>
+                      <View style={[styles.authorityPill, { backgroundColor: '#e0e7ff' }]}>
+                        <Text style={[styles.authorityPillText, { color: '#3730a3' }]}>Dept Admin</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.authorityTitle}>Department-wise Admin</Text>
+                    <Text style={styles.authorityDesc}>
+                      Manages assigned department members, edits client permissions, approves login devices, and oversees department activity.
+                    </Text>
+                    <View style={styles.authorityStatusRow}>
+                      <View
+                        style={[
+                          styles.radioCircleAuth,
+                          selectedAuthority === 'DEPT_ADMIN' && { borderColor: '#4338ca' },
+                        ]}
+                      >
+                        {selectedAuthority === 'DEPT_ADMIN' && (
+                          <View style={[styles.radioInnerAuth, { backgroundColor: '#4338ca' }]} />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.authorityStatusText,
+                          selectedAuthority === 'DEPT_ADMIN' && { color: '#3730a3' },
+                        ]}
+                      >
+                        {selectedAuthority === 'DEPT_ADMIN' ? 'Selected Authority' : 'Click to select'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Card 3: Department Member / User */}
+                  <TouchableOpacity
+                    style={[
+                      styles.authorityCard,
+                      selectedAuthority === 'DEPT_USER' && styles.authorityCardUserActive,
+                    ]}
+                    onPress={() => handleSelectAuthority('DEPT_USER')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.authorityTopRow}>
+                      <View style={[styles.authorityIconBox, { backgroundColor: '#dcfce7' }]}>
+                        <UsersIcon size={16} color="#15803d" />
+                      </View>
+                      <View style={[styles.authorityPill, { backgroundColor: '#dcfce7' }]}>
+                        <Text style={[styles.authorityPillText, { color: '#166534' }]}>Dept Member</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.authorityTitle}>Department Member / User</Text>
+                    <Text style={styles.authorityDesc}>
+                      Standard department staff, team member, or client. Access focused on direct messaging, photo capture, and file sharing.
+                    </Text>
+                    <View style={styles.authorityStatusRow}>
+                      <View
+                        style={[
+                          styles.radioCircleAuth,
+                          selectedAuthority === 'DEPT_USER' && { borderColor: '#15803d' },
+                        ]}
+                      >
+                        {selectedAuthority === 'DEPT_USER' && (
+                          <View style={[styles.radioInnerAuth, { backgroundColor: '#15803d' }]} />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.authorityStatusText,
+                          selectedAuthority === 'DEPT_USER' && { color: '#166534' },
+                        ]}
+                      >
+                        {selectedAuthority === 'DEPT_USER' ? 'Selected Authority' : 'Click to select'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Card 4: Vendor / External Partner */}
+                  <TouchableOpacity
+                    style={[
+                      styles.authorityCard,
+                      selectedAuthority === 'VENDOR' && styles.authorityCardVendorActive,
+                    ]}
+                    onPress={() => handleSelectAuthority('VENDOR')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.authorityTopRow}>
+                      <View style={[styles.authorityIconBox, { backgroundColor: '#fef3c7' }]}>
+                        <HandshakeIcon size={16} color="#b45309" />
+                      </View>
+                      <View style={[styles.authorityPill, { backgroundColor: '#fef3c7' }]}>
+                        <Text style={[styles.authorityPillText, { color: '#92400e' }]}>Vendor Partner</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.authorityTitle}>Vendor / External Partner</Text>
+                    <Text style={styles.authorityDesc}>
+                      External vendor role. Receives chats from authorized staff and replies. Isolated from chatting with other external vendors.
+                    </Text>
+                    <View style={styles.authorityStatusRow}>
+                      <View
+                        style={[
+                          styles.radioCircleAuth,
+                          selectedAuthority === 'VENDOR' && { borderColor: '#b45309' },
+                        ]}
+                      >
+                        {selectedAuthority === 'VENDOR' && (
+                          <View style={[styles.radioInnerAuth, { backgroundColor: '#b45309' }]} />
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.authorityStatusText,
+                          selectedAuthority === 'VENDOR' && { color: '#92400e' },
+                        ]}
+                      >
+                        {selectedAuthority === 'VENDOR' ? 'Selected Authority' : 'Click to select'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              {/* Role Name */}
+              {/* Role Profile Name */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   Role Profile Name <Text style={{ color: '#ef4444' }}>*</Text>
@@ -902,7 +1227,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
 
               {/* 1-Click Preset Templates */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>1-Click Preset Templates</Text>
+                <Text style={styles.inputLabel}>Quick 1-Click Role Presets</Text>
                 <View style={styles.presetsRow}>
                   {ROLE_PRESETS.map((preset, idx) => (
                     <TouchableOpacity
@@ -925,55 +1250,85 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                 </View>
               </View>
 
-              {/* Permission Capabilities Toggle List */}
+              {/* ── STEP 2: 13 PERMISSION CAPABILITIES & ACCESS TOGGLES ── */}
               <View style={styles.permissionsHeaderRow}>
-                <Text style={styles.formSectionHeading}>
-                  2. PERMISSION CAPABILITIES ({ALL_MASTER_KEYS.filter((k) => activeToggles[k]).length}/{ALL_MASTER_KEYS.length} ENABLED)
-                </Text>
+                <View>
+                  <Text style={styles.formSectionHeading}>
+                    2. PERMISSIONS & ACCESS TOGGLES
+                  </Text>
+                  <Text style={styles.formSectionSub}>
+                    {ALL_MASTER_KEYS.filter((k) => activeToggles[k]).length} of {ALL_MASTER_KEYS.length} Capabilities Enabled
+                  </Text>
+                </View>
+
                 <View style={styles.toggleAllButtonsRow}>
-                  <TouchableOpacity onPress={() => handleToggleAll(true)}>
+                  <TouchableOpacity onPress={() => handleToggleAll(true)} style={styles.toggleAllPill}>
                     <Text style={styles.toggleAllBtnText}>Enable All</Text>
                   </TouchableOpacity>
-                  <Text style={styles.toggleAllDivider}>•</Text>
-                  <TouchableOpacity onPress={() => handleToggleAll(false)}>
-                    <Text style={styles.toggleAllBtnText}>Disable All</Text>
+                  <TouchableOpacity onPress={() => handleToggleAll(false)} style={styles.toggleAllPill}>
+                    <Text style={[styles.toggleAllBtnText, { color: colors.textMuted }]}>Disable All</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {PERMISSION_CONFIGS.map((cat, catIdx) => (
-                <View key={catIdx} style={styles.categoryBlock}>
-                  <View style={styles.categoryHeader}>
-                    <Text style={styles.categoryTitle}>{cat.category}</Text>
+              {PERMISSION_CONFIGS.map((cat, catIdx) => {
+                const activeCount = cat.items.filter((i) => activeToggles[i.key]).length;
+                return (
+                  <View key={catIdx} style={styles.categoryBlock}>
+                    <View style={styles.categoryHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                        {cat.icon(cat.color)}
+                        <Text style={styles.categoryTitle}>{cat.category}</Text>
+                      </View>
+                      <View style={styles.categoryCountBadge}>
+                        <Text style={styles.categoryCountText}>
+                          {activeCount} / {cat.items.length} Enabled
+                        </Text>
+                      </View>
+                    </View>
                     <Text style={styles.categoryDesc}>{cat.description}</Text>
-                  </View>
 
-                  <View style={styles.categoryItemsList}>
-                    {cat.items.map((item) => {
-                      const isEnabled = Boolean(activeToggles[item.key]);
-                      return (
-                        <View key={item.key} style={styles.permissionToggleItem}>
-                          <View style={styles.permToggleTextCol}>
-                            <View style={styles.permBadgeAndTitle}>
-                              <Text style={styles.permBadgeText}>{item.badge}</Text>
-                              <Text style={styles.permTitleText} numberOfLines={1}>
-                                {item.title}
+                    <View style={styles.categoryItemsList}>
+                      {cat.items.map((item) => {
+                        const isEnabled = Boolean(activeToggles[item.key]);
+                        return (
+                          <View key={item.key} style={styles.permissionToggleItem}>
+                            <View style={styles.permToggleTextCol}>
+                              <View style={styles.permBadgeAndTitle}>
+                                <Text style={styles.permTitleText}>{item.title}</Text>
+                                {item.requiresAdmin && (
+                                  <View style={styles.adminTierBadge}>
+                                    <Text style={styles.adminTierBadgeText}>Admin Tier</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Text style={styles.permDescriptionText}>{item.description}</Text>
+                            </View>
+
+                            <View style={styles.switchCol}>
+                              <Text
+                                style={[
+                                  styles.switchStatusLabel,
+                                  isEnabled ? styles.switchStatusAllowed : styles.switchStatusRestricted,
+                                ]}
+                              >
+                                {isEnabled ? 'ALLOWED' : 'RESTRICTED'}
                               </Text>
+                              <Switch
+                                value={isEnabled}
+                                onValueChange={() => handleToggleKey(item.key)}
+                                trackColor={{ false: '#e2e8f0', true: colors.primary }}
+                                thumbColor={isEnabled ? '#ffffff' : '#f8fafc'}
+                                ios_backgroundColor="#e2e8f0"
+                              />
                             </View>
                           </View>
-                          <Switch
-                            value={isEnabled}
-                            onValueChange={() => handleToggleKey(item.key)}
-                            trackColor={{ false: '#e2e8f0', true: colors.primary }}
-                            thumbColor={isEnabled ? '#ffffff' : '#f8fafc'}
-                            ios_backgroundColor="#e2e8f0"
-                          />
-                        </View>
-                      );
-                    })}
+                        );
+                      })}
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
 
               {/* Modal Actions */}
               <View style={styles.modalActions}>
@@ -984,7 +1339,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                   style={{ flex: 1 }}
                 />
                 <AppButton
-                  title={modalMode === 'create' ? 'Create Role' : 'Save Changes'}
+                  title={modalMode === 'create' ? 'Create User Role' : 'Save Changes'}
                   onPress={handleSaveRole}
                   loading={saving}
                   style={{ flex: 1, backgroundColor: colors.buttonPrimary }}
@@ -1014,6 +1369,7 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
               { label: 'All Authority Tiers', value: 'all', dotColor: colors.primary },
               { label: 'Admin Tier Only', value: 'ADMIN', dotColor: '#7c3aed' },
               { label: 'User / Client Tier Only', value: 'USER', dotColor: '#059669' },
+              { label: 'Vendor Partner Only', value: 'VENDOR', dotColor: '#b45309' },
             ].map((opt) => {
               const isSelected = tierFilter === opt.value;
               return (
@@ -1028,7 +1384,12 @@ export const UserTypeMasterScreen: React.FC<UserTypeMasterScreenProps> = ({ navi
                 >
                   <View style={styles.dropdownOptionLeft}>
                     <View style={[styles.tierDot, { backgroundColor: opt.dotColor }]} />
-                    <Text style={[styles.dropdownOptionLabel, isSelected && styles.dropdownOptionLabelActive]}>
+                    <Text
+                      style={[
+                        styles.dropdownOptionLabel,
+                        isSelected && styles.dropdownOptionLabelActive,
+                      ]}
+                    >
                       {opt.label}
                     </Text>
                   </View>
@@ -1100,58 +1461,48 @@ const styles = StyleSheet.create({
   createRoleBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: spacing.md,
+    gap: 6,
+    paddingHorizontal: 12,
     paddingVertical: 9,
   },
   createRoleIconCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   createRoleBtnText: {
-    fontSize: fontSizes.xs,
-    fontWeight: fontWeights.bold,
     color: '#ffffff',
+    fontSize: 11.5,
+    fontWeight: fontWeights.extrabold,
+    letterSpacing: 0.3,
   },
 
-  /* ── 3 Top KPI Cards ── */
-  kpiCardsRow: {
+  /* ── KPI Stats Row ── */
+  kpiRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginBottom: spacing.md,
   },
   kpiCard: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: borderRadius.lg,
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    alignItems: 'center',
-  },
-  kpiIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  kpiTextWrap: {
     alignItems: 'center',
   },
   kpiLabel: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: fontWeights.extrabold,
     color: colors.textLight,
     letterSpacing: 0.3,
   },
   kpiValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: fontWeights.black,
     marginTop: 1,
   },
@@ -1248,24 +1599,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
-  avatarBox: {
-    width: 38,
-    height: 38,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  avatarBoxAdmin: {
-    backgroundColor: '#f5f3ff',
-    borderWidth: 1,
-    borderColor: '#ddd6fe',
-  },
-  avatarBoxUser: {
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-  },
   roleInfoCol: {
     flex: 1,
     marginLeft: 8,
@@ -1280,12 +1613,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: fontWeights.extrabold,
     color: colors.textPrimary,
-  },
-  tierBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
   },
   tierBadgeCorner: {
     position: 'absolute',
@@ -1305,6 +1632,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ecfdf5',
     borderColor: '#a7f3d0',
   },
+  tierBadgeVendor: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
   tierBadgeText: {
     fontSize: 10,
     fontWeight: fontWeights.extrabold,
@@ -1314,6 +1645,9 @@ const styles = StyleSheet.create({
   },
   tierBadgeTextUser: {
     color: '#059669',
+  },
+  tierBadgeTextVendor: {
+    color: '#b45309',
   },
   idTagBox: {
     paddingHorizontal: 7,
@@ -1475,14 +1809,14 @@ const styles = StyleSheet.create({
   /* ── Create / Edit Modal ── */
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   modalContent: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xxl,
-    maxHeight: '90%',
+    borderRadius: 20,
+    maxHeight: '92%',
     padding: spacing.md,
     overflow: 'hidden',
   },
@@ -1493,7 +1827,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   modalTitleRow: {
     flexDirection: 'row',
@@ -1502,10 +1836,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalHeaderIcon: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: borderRadius.md,
-    backgroundColor: '#eef2ff',
+    backgroundColor: '#fef2f2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1523,58 +1857,115 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   formSectionHeading: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: fontWeights.black,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     letterSpacing: 0.3,
-    marginBottom: 6,
   },
-  tierSelectorRow: {
-    flexDirection: 'row',
+  formSectionSub: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 1,
+    marginBottom: 8,
+  },
+
+  /* ── 4 Authority Tier Cards Grid ── */
+  authorityCardsGrid: {
     gap: 8,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  tierSelectCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
+  authorityCard: {
     borderRadius: borderRadius.lg,
     borderWidth: 1.5,
     borderColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
-    gap: 8,
+    backgroundColor: '#f8fafc',
+    padding: 10,
   },
-  tierSelectCardActiveAdmin: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySubtle,
+  authorityCardSuperActive: {
+    borderColor: '#7e22ce',
+    backgroundColor: '#faf5ff',
   },
-  tierSelectCardActiveUser: {
-    borderColor: '#059669',
-    backgroundColor: '#ecfdf5',
+  authorityCardAdminActive: {
+    borderColor: '#4338ca',
+    backgroundColor: '#eef2ff',
   },
-  tierSelectIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: borderRadius.sm,
+  authorityCardUserActive: {
+    borderColor: '#15803d',
+    backgroundColor: '#f0fdf4',
+  },
+  authorityCardVendorActive: {
+    borderColor: '#b45309',
+    backgroundColor: '#fffbeb',
+  },
+  authorityTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  authorityIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tierSelectTitle: {
-    fontSize: 11,
-    fontWeight: fontWeights.extrabold,
-    color: colors.textPrimary,
+  authorityPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  tierSelectSub: {
+  authorityPillText: {
     fontSize: 9,
-    color: colors.textMuted,
-    marginTop: 1,
+    fontWeight: fontWeights.extrabold,
   },
+  authorityTitle: {
+    fontSize: 12,
+    fontWeight: fontWeights.bold,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  authorityDesc: {
+    fontSize: 10,
+    color: colors.textMuted,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  authorityStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  radioCircleAuth: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioInnerAuth: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  authorityStatusText: {
+    fontSize: 10,
+    fontWeight: fontWeights.semibold,
+    color: colors.textMuted,
+  },
+
+  /* ── Input Group ── */
   inputGroup: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm + 4,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: fontWeights.bold,
     color: colors.textSecondary,
     marginBottom: 5,
@@ -1584,10 +1975,10 @@ const styles = StyleSheet.create({
   modalTextInput: {
     backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#cbd5e1',
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.sm,
-    height: 40,
+    height: 42,
     fontSize: fontSizes.xs,
     color: colors.textPrimary,
   },
@@ -1620,29 +2011,36 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
     color: colors.textSecondary,
   },
+
+  /* ── Permissions Header & Categories ── */
   permissionsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
+    gap: 6,
   },
   toggleAllButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+  },
+  toggleAllPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   toggleAllBtnText: {
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: fontWeights.bold,
     color: colors.primary,
   },
-  toggleAllDivider: {
-    fontSize: 10,
-    color: colors.textLight,
-  },
   categoryBlock: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -1650,17 +2048,32 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   categoryHeader: {
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+    gap: 6,
   },
   categoryTitle: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: fontWeights.extrabold,
     color: colors.textPrimary,
+  },
+  categoryCountBadge: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  categoryCountText: {
+    fontSize: 9,
+    fontWeight: fontWeights.extrabold,
+    color: '#475569',
   },
   categoryDesc: {
     fontSize: 9.5,
     color: colors.textMuted,
-    marginTop: 1,
+    marginBottom: 8,
   },
   categoryItemsList: {
     gap: 6,
@@ -1669,30 +2082,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
     borderRadius: borderRadius.md,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#f1f5f9',
+    gap: 8,
   },
   permToggleTextCol: {
     flex: 1,
-    paddingRight: 8,
   },
   permBadgeAndTitle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  permBadgeText: {
-    fontSize: 11,
+    flexWrap: 'wrap',
   },
   permTitleText: {
     fontSize: 11,
-    fontWeight: fontWeights.semibold,
+    fontWeight: fontWeights.bold,
     color: colors.textPrimary,
-    flex: 1,
+  },
+  adminTierBadge: {
+    backgroundColor: '#f5f3ff',
+    borderWidth: 1,
+    borderColor: '#ddd6fe',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  adminTierBadgeText: {
+    fontSize: 8,
+    fontWeight: fontWeights.extrabold,
+    color: '#7c3aed',
+  },
+  permDescriptionText: {
+    fontSize: 9.5,
+    color: colors.textMuted,
+    lineHeight: 13,
+    marginTop: 2,
+  },
+  switchCol: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  switchStatusLabel: {
+    fontSize: 8,
+    fontWeight: fontWeights.black,
+    letterSpacing: 0.4,
+  },
+  switchStatusAllowed: {
+    color: '#2563eb',
+  },
+  switchStatusRestricted: {
+    color: '#94a3b8',
   },
   modalActions: {
     flexDirection: 'row',

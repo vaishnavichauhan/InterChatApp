@@ -9,10 +9,16 @@ export interface SendMessagePayload {
 
 export interface CreateGroupPayload {
   title: string;
+  description?: string;
   memberIds: number[];
   isAnnouncement?: boolean;
   whoCanPost?: 'ALL_MEMBERS' | 'SELECTED_MEMBERS' | 'ADMIN_ONLY';
+  allowedMemberIds?: number[];
   departmentId?: number | null;
+  departmentIds?: number[];
+  companyId?: number | null;
+  companyIds?: number[];
+  isCompanyGroup?: boolean;
 }
 
 export const getConversations = async () => {
@@ -37,7 +43,13 @@ export const deleteGroupChat = async (conversationId: number) => {
 
 export const updateGroupSettings = async (
   conversationId: number,
-  settings: { title?: string; whoCanPost?: string; description?: string }
+  settings: {
+    title?: string;
+    whoCanPost?: string;
+    who_can_post?: string;
+    description?: string;
+    allowed_member_ids?: number[];
+  }
 ) => {
   const res = await apiClient.patch(`/chat/group/${conversationId}/settings`, settings);
   return res.data;
@@ -48,9 +60,43 @@ export const getGroupMembers = async (conversationId: number) => {
   return res.data;
 };
 
-export const searchCoworkers = async (q: string, departmentId?: number | null) => {
-  const deptQuery = departmentId ? `&departmentId=${departmentId}` : '';
-  const res = await apiClient.get(`/chat/users/search?q=${encodeURIComponent(q)}${deptQuery}`);
+export const searchCoworkers = async (
+  q: string = '',
+  deptOrParams?: number | null | {
+    departmentId?: number | null;
+    departmentIds?: number[] | string;
+    companyId?: number | null;
+    companyIds?: number[] | string;
+  }
+) => {
+  const searchParams = new URLSearchParams();
+  if (q) searchParams.append('q', q);
+
+  if (typeof deptOrParams === 'number') {
+    searchParams.append('departmentId', String(deptOrParams));
+  } else if (deptOrParams && typeof deptOrParams === 'object') {
+    if (deptOrParams.departmentId) {
+      searchParams.append('departmentId', String(deptOrParams.departmentId));
+    }
+    if (deptOrParams.departmentIds) {
+      const val = Array.isArray(deptOrParams.departmentIds)
+        ? deptOrParams.departmentIds.join(',')
+        : deptOrParams.departmentIds;
+      if (val) searchParams.append('departmentIds', String(val));
+    }
+    if (deptOrParams.companyId) {
+      searchParams.append('companyId', String(deptOrParams.companyId));
+    }
+    if (deptOrParams.companyIds) {
+      const val = Array.isArray(deptOrParams.companyIds)
+        ? deptOrParams.companyIds.join(',')
+        : deptOrParams.companyIds;
+      if (val) searchParams.append('companyIds', String(val));
+    }
+  }
+
+  const queryStr = searchParams.toString() ? `?${searchParams.toString()}` : '';
+  const res = await apiClient.get(`/chat/users/search${queryStr}`);
   return res.data;
 };
 
@@ -64,7 +110,10 @@ export const sendChatMessage = async (payload: SendMessagePayload) => {
   return res.data;
 };
 
-export const deleteMessage = async (messageId: number, deleteType: 'FOR_ME' | 'FOR_EVERYONE' = 'FOR_ME') => {
+export const deleteMessage = async (
+  messageId: number,
+  deleteType: 'FOR_ME' | 'FOR_EVERYONE' = 'FOR_ME'
+) => {
   const res = await apiClient.delete(`/chat/messages/${messageId}`, {
     data: { deleteType },
   });

@@ -37,6 +37,7 @@ import {
   ClockIcon,
   ShieldCheckIcon,
   MailIcon,
+  CityIcon,
 } from '../../components/icons/SvgIcons';
 import {
   getAllUsers,
@@ -50,6 +51,7 @@ import {
   fetchAuditLogs,
 } from '../../api/adminApi';
 import { getDepartments } from '../../api/departmentApi';
+import { getCompanies, Company } from '../../api/companyApi';
 
 interface UserMasterScreenProps {
   navigation: any;
@@ -67,6 +69,9 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
   const [refreshing, setRefreshing] = useState(false);
 
   // Search & Filters for Users Tab
+  const [companiesList, setCompaniesList] = useState<Company[]>([]);
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
@@ -87,6 +92,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editMobNo, setEditMobNo] = useState('');
+  const [editCompanyId, setEditCompanyId] = useState<number | null>(null);
   const [editUserTypeId, setEditUserTypeId] = useState<string | number>('');
   const [editRole, setEditRole] = useState<'admin' | 'user'>('user');
   const [editDeptRole, setEditDeptRole] = useState<'ADMIN' | 'USER'>('USER');
@@ -95,15 +101,16 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
   const [editDeviceLock, setEditDeviceLock] = useState(true);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Fetch all master data (Users, Pending Devices, Device Audit Logs, Depts, UserTypes)
+  // Fetch all master data (Users, Pending Devices, Device Audit Logs, Depts, UserTypes, Companies)
   const fetchData = async () => {
     try {
-      const [usersRes, devicesRes, logsRes, deptsRes, typesRes] = await Promise.all([
+      const [usersRes, devicesRes, logsRes, deptsRes, typesRes, compRes] = await Promise.all([
         getAllUsers(true).catch(() => ({ data: { users: [] } })),
         getPendingDevices().catch(() => ({ data: { devices: [] } })),
         fetchAuditLogs().catch(() => ({ data: { logs: [] } })),
         getDepartments(false).catch(() => ({ departments: [] })),
         getUserTypes().catch(() => ({ data: { data: [] } })),
+        getCompanies(false).catch(() => ({ companies: [] })),
       ]);
 
       const uList = usersRes.data?.users || usersRes.data?.data || (Array.isArray(usersRes.data) ? usersRes.data : []);
@@ -111,12 +118,14 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
       const aList = logsRes.data?.logs || logsRes.data?.data || (Array.isArray(logsRes.data) ? logsRes.data : []);
       const dList = deptsRes?.departments || deptsRes?.data || (Array.isArray(deptsRes) ? deptsRes : []);
       const tList = typesRes.data?.data || typesRes.data || [];
+      const cList = compRes?.companies || compRes?.data || (Array.isArray(compRes) ? compRes : []);
 
       setUsers(Array.isArray(uList) ? uList : []);
       setPendingDevices(Array.isArray(pList) ? pList : []);
       setAuditLogs(Array.isArray(aList) ? aList : []);
       setDepartmentsList(Array.isArray(dList) ? dList : []);
       setUserTypesList(Array.isArray(tList) ? tList : []);
+      setCompaniesList(Array.isArray(cList) ? cList : []);
     } catch (err) {
       console.warn('Failed to load user master data', err);
     } finally {
@@ -239,6 +248,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
     setEditName(user.name || '');
     setEditEmail(user.email || '');
     setEditMobNo(user.mob_no || '');
+    setEditCompanyId(user.company_id || null);
     setEditUserTypeId(user.user_type_id || '');
     setEditRole(user.role === 'admin' ? 'admin' : 'user');
     setEditDeptRole(isDeptAdmin ? 'ADMIN' : 'USER');
@@ -289,6 +299,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
         email: editEmail.trim(),
         mobNo: editMobNo.trim(),
         userTypeId: editUserTypeId || null,
+        companyId: editCompanyId || null,
         role: editRole,
         deviceVerificationRequired: editDeviceLock,
         departments: departmentsPayload,
@@ -315,6 +326,10 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
       if (statusFilter === 'active' && !u.active) return false;
       if (statusFilter === 'inactive' && u.active) return false;
 
+      if (companyFilter !== 'all') {
+        if (String(u.company_id) !== String(companyFilter)) return false;
+      }
+
       if (deptFilter !== 'all') {
         const uDepts = Array.isArray(u.departments) ? u.departments : [];
         const hasDept = uDepts.some((d: any) => String(d.department_id) === String(deptFilter));
@@ -332,7 +347,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
 
       return true;
     });
-  }, [users, statusFilter, deptFilter, searchQuery]);
+  }, [users, statusFilter, companyFilter, deptFilter, searchQuery]);
 
   // Filtered Audit Logs List
   const filteredAuditLogs = useMemo(() => {
@@ -413,6 +428,59 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
           <ChevronDownIcon size={13} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
+
+      {/* ── Company Filter Bar ── */}
+      {companiesList.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.companyFilterBar}
+          contentContainerStyle={styles.companyFilterContent}
+        >
+          <TouchableOpacity
+            style={[
+              styles.companyFilterChip,
+              companyFilter === 'all' && styles.companyFilterChipActive,
+            ]}
+            onPress={() => setCompanyFilter('all')}
+          >
+            <Text
+              style={[
+                styles.companyFilterChipText,
+                companyFilter === 'all' && styles.companyFilterChipTextActive,
+              ]}
+            >
+              All Companies
+            </Text>
+          </TouchableOpacity>
+          {companiesList.map((comp) => {
+            const isSelected = String(companyFilter) === String(comp.id);
+            return (
+              <TouchableOpacity
+                key={comp.id}
+                style={[
+                  styles.companyFilterChip,
+                  isSelected && styles.companyFilterChipActive,
+                ]}
+                onPress={() => setCompanyFilter(String(comp.id))}
+              >
+                <CityIcon
+                  size={11}
+                  color={isSelected ? '#ffffff' : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.companyFilterChipText,
+                    isSelected && styles.companyFilterChipTextActive,
+                  ]}
+                >
+                  {comp.company_name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -589,6 +657,16 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
 
                 {/* ── Role & Department Scope Row ── */}
                 <View style={styles.rolesSection}>
+                  {/* Company Badge */}
+                  {item.company_name ? (
+                    <View style={styles.companyPill}>
+                      <CityIcon size={10} color="#0284c7" />
+                      <Text style={styles.companyPillText} numberOfLines={1}>
+                        {item.company_name}
+                      </Text>
+                    </View>
+                  ) : null}
+
                   {/* Role / Type */}
                   <View style={[styles.roleBadge, isAdm ? styles.roleBadgeAdmin : styles.roleBadgeUser]}>
                     <ShieldUserIcon size={12} color={isAdm ? '#7c3aed' : colors.primary} />
@@ -1269,6 +1347,27 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                 keyboardType="phone-pad"
               />
 
+              {/* Company Entity */}
+              <Text style={styles.inputLabel}>Company Entity</Text>
+              <View style={styles.pickerChipsRow}>
+                {companiesList.map((c) => {
+                  const isSelected = editCompanyId === c.id;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.pickerChip, isSelected && styles.pickerChipActive]}
+                      onPress={() => setEditCompanyId(c.id)}
+                      activeOpacity={0.7}
+                    >
+                      <CityIcon size={12} color={isSelected ? '#ffffff' : colors.textSecondary} />
+                      <Text style={[styles.pickerChipText, isSelected && styles.pickerChipTextActive]}>
+                        {c.company_name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               {/* Role Profile */}
               <Text style={styles.inputLabel}>Role Profile</Text>
               <View style={styles.pickerChipsRow}>
@@ -1458,6 +1557,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: fontWeights.medium,
   },
+
   createUserBtn: {
     borderRadius: borderRadius.md,
     overflow: 'hidden',
@@ -1548,6 +1648,49 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  companyFilterBar: {
+    marginTop: spacing.sm,
+  },
+  companyFilterContent: {
+    gap: 6,
+    paddingRight: spacing.sm,
+  },
+  companyFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    gap: 5,
+  },
+  companyFilterChipActive: {
+    backgroundColor: colors.primary,
+  },
+  companyFilterChipText: {
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
+    color: colors.textSecondary,
+  },
+  companyFilterChipTextActive: {
+    color: '#ffffff',
+  },
+  companyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    gap: 3.5,
+  },
+  companyPillText: {
+    fontSize: 9.5,
+    fontWeight: fontWeights.bold,
+    color: '#0369a1',
   },
 
   /* ── User Card Architecture ── */

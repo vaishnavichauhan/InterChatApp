@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   useWindowDimensions,
+  Platform,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -17,15 +20,23 @@ import {
   ShieldCheckIcon,
   MobileIcon,
   BuildingIcon,
+  CityIcon,
   MessagesSquareIcon,
   ArrowRightIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronRightIcon,
   CloudIcon,
   LayersIcon,
+  FileSpreadsheetIcon,
 } from '../../components/icons/SvgIcons';
 import { getDashboardStats } from '../../api/adminApi';
 import { useAuthStore } from '../../store/authStore';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface AdminDashboardScreenProps {
   navigation: any;
@@ -40,7 +51,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isMastersOpen, setIsMastersOpen] = useState(true);
+  const [isMastersOpen, setIsMastersOpen] = useState(false);
+
+  const toggleMasters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsMastersOpen((prev) => !prev);
+  };
 
   // Banner height — same proportions as WelcomeScreen upper section
   const bannerHeight = 300;
@@ -75,6 +91,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   // Master items dropdown list (Same list as Frontend Navbar)
   const masterList = [
     {
+      id: 'company',
+      name: 'Company Master',
+      desc: 'Manage corporate entities & company boundaries',
+      icon: CityIcon,
+      iconColor: '#2563eb',
+      bgColor: '#eff6ff',
+      onPress: () => navigation.navigate('CompanyMaster'),
+    },
+    {
       id: 'department',
       name: 'Department Master',
       desc: 'Manage departments & organizational units',
@@ -102,6 +127,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       onPress: () => navigation.navigate('UserTypeMaster'),
     },
     {
+      id: 'bulk_import',
+      name: 'Bulk Employee Import',
+      desc: 'Import users in bulk from Excel / CSV spreadsheet',
+      icon: FileSpreadsheetIcon,
+      iconColor: '#059669',
+      bgColor: '#ecfdf5',
+      onPress: () => navigation.navigate('BulkUserImport'),
+    },
+    {
       id: 'cloud_storage',
       name: 'Cloud Storage Master',
       desc: 'Configure Google Cloud Storage bucket & keys',
@@ -109,7 +143,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       iconColor: '#d97706',
       bgColor: '#fffbeb',
       onPress: () => navigation.navigate('CloudStorageMaster'),
-    }
+    },
+   
   ];
 
   return (
@@ -232,43 +267,69 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Enterprise Administration Masters — Dropdown Container */}
-        <View style={styles.mastersSectionWrap}>
-          {/* <TouchableOpacity
-            style={styles.dropdownHeaderTrigger}
-            onPress={() => setIsMastersOpen(!isMastersOpen)}
-            activeOpacity={0.8}
-          > */}
+        {/* Enterprise Administration Masters — Main Container Card with Nested Cards */}
+        <View style={[styles.mastersMainContainerCard, shadows.sm]}>
+          <TouchableOpacity
+            style={[
+              styles.dropdownHeaderTrigger,
+              isMastersOpen && styles.dropdownHeaderTriggerOpen,
+            ]}
+            onPress={toggleMasters}
+            activeOpacity={0.7}
+          >
             <View style={styles.dropdownTitleRow}>
               <View style={styles.dropdownHeaderIconWrap}>
                 <LayersIcon size={18} color={colors.primary} />
               </View>
-              <Text style={styles.sectionHeader}>Enterprise Administration Masters</Text>
+              <View style={styles.dropdownTitleTextCol}>
+                <Text style={styles.sectionHeader}>Enterprise Administration Masters</Text>
+                <Text style={styles.dropdownSubtitle}>
+                  {isMastersOpen ? 'Tap to collapse' : `${masterList.length} masters available`}
+                </Text>
+              </View>
             </View>
-         
+
+            <View style={styles.dropdownChevronWrap}>
+              <View style={styles.dropdownBadge}>
+                <Text style={styles.dropdownBadgeText}>{masterList.length}</Text>
+              </View>
+              <View style={styles.chevronIconWrap}>
+                {isMastersOpen ? (
+                  <ChevronUpIcon size={18} color={colors.primary} />
+                ) : (
+                  <ChevronDownIcon size={18} color="#64748b" />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {isMastersOpen && (
             <View style={styles.dropdownMenuList}>
-              {masterList?.map((item) => {
+              {masterList?.map((item, index) => {
                 const ItemIcon = item.icon;
                 return (
                   <TouchableOpacity
                     key={item.id}
-                    style={[styles.masterCard, shadows.sm]}
+                    style={[
+                      styles.dropdownMenuItem,
+                      index < masterList.length - 1 && styles.dropdownMenuItemBorder,
+                    ]}
                     onPress={item.onPress}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.masterIcon, { backgroundColor: item.bgColor }]}>
-                      <ItemIcon size={22} color={item.iconColor} />
+                    <View style={[styles.menuItemIconWrap, { backgroundColor: item.bgColor }]}>
+                      <ItemIcon size={19} color={item.iconColor} />
                     </View>
-                    <View style={styles.masterMeta}>
-                      <Text style={styles.masterTitle}>{item.name}</Text>
-                      <Text style={styles.masterDesc}>{item.desc}</Text>
+                    <View style={styles.menuItemTextCol}>
+                      <Text style={styles.menuItemTitle}>{item.name}</Text>
+                      <Text style={styles.menuItemDesc} numberOfLines={1}>{item.desc}</Text>
                     </View>
-                    <ArrowRightIcon size={18} color={colors.textLight} />
+                    <ChevronRightIcon size={16} color="#94a3b8" />
                   </TouchableOpacity>
                 );
               })}
             </View>
-          
+          )}
         </View>
       </ScrollView>
     </View>
@@ -471,46 +532,62 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
   },
-  mastersSectionWrap: {
+  mastersMainContainerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     marginBottom: spacing.xl,
+    overflow: 'hidden',
   },
   dropdownHeaderTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    marginBottom: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    paddingVertical: 14,
+  },
+  dropdownHeaderTriggerOpen: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
   dropdownTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    marginTop:spacing.md,
     flex: 1,
+    marginRight: 8,
   },
   dropdownHeaderIconWrap: {
-    width: 30,
-    height: 30,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     backgroundColor: '#e0efff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
+  dropdownTitleTextCol: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  dropdownSubtitle: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
   dropdownChevronWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  chevronIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropdownBadge: {
     backgroundColor: '#e0efff',
@@ -527,40 +604,41 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   dropdownMenuList: {
-    marginTop: 2,
+    backgroundColor: '#ffffff',
+    paddingVertical: 4,
   },
-  masterCard: {
+  dropdownMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
   },
-  masterIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.md,
+  dropdownMenuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  menuItemIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: 12,
   },
-  masterMeta: {
+  menuItemTextCol: {
     flex: 1,
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
-  masterTitle: {
-    fontSize: fontSizes.sm,
+  menuItemTitle: {
+    fontSize: 14,
     fontWeight: fontWeights.bold,
     color: colors.textPrimary,
     marginBottom: 2,
   },
-  masterDesc: {
-    fontSize: fontSizes.tiny,
+  menuItemDesc: {
+    fontSize: 11,
     color: colors.textMuted,
-    lineHeight: 16,
+    lineHeight: 15,
   },
 });
 
