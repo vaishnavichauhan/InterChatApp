@@ -13,6 +13,7 @@ export type MainTabParamList = {
 
 export type RootStackParamList = {
   Auth: undefined;
+  ChangeFirstPassword: undefined;
   MainTabs: undefined;
   ChatDetail: { conversationId: number };
   NewChat: undefined;

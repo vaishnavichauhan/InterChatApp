@@ -99,6 +99,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
   const [editSingleDept, setEditSingleDept] = useState<string | number>('');
   const [editMultiDepts, setEditMultiDepts] = useState<number[]>([]);
   const [editDeviceLock, setEditDeviceLock] = useState(true);
+  const [editMustChangePassword, setEditMustChangePassword] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Fetch all master data (Users, Pending Devices, Device Audit Logs, Depts, UserTypes, Companies)
@@ -259,6 +260,13 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
         ? user.device_verification_required
         : true
     );
+    setEditMustChangePassword(
+      Boolean(
+        user.must_change_password &&
+          user.must_change_password !== '0' &&
+          user.must_change_password !== 0
+      )
+    );
     setIsEditModalOpen(true);
   };
 
@@ -302,6 +310,7 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
         companyId: editCompanyId || null,
         role: editRole,
         deviceVerificationRequired: editDeviceLock,
+        mustChangePassword: editMustChangePassword,
         departments: departmentsPayload,
       });
       setIsEditModalOpen(false);
@@ -629,6 +638,16 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                         {item.email}
                       </Text>
                     </View>
+                    {Boolean(
+                      item.must_change_password &&
+                        item.must_change_password !== '0' &&
+                        item.must_change_password !== 0
+                    ) && (
+                      <View style={styles.mustChangeBadge}>
+                        <LockIcon size={10} color="#be123c" />
+                        <Text style={styles.mustChangeBadgeText}>1st Login Password Required</Text>
+                      </View>
+                    )}
                   </View>
 
                   {/* Account Status Pill */}
@@ -1434,6 +1453,19 @@ export const UserMasterScreen: React.FC<UserMasterScreenProps> = ({ navigation }
                 <Switch
                   value={editDeviceLock}
                   onValueChange={setEditDeviceLock}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                />
+              </View>
+
+              {/* Require First-Time Password Change Switch */}
+              <View style={styles.switchRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.switchLabel}>Require Password Change on Next Login</Text>
+                  <Text style={styles.switchDesc}>Enforces mandatory first-time password screen</Text>
+                </View>
+                <Switch
+                  value={editMustChangePassword}
+                  onValueChange={setEditMustChangePassword}
                   trackColor={{ false: colors.border, true: colors.primary }}
                 />
               </View>
@@ -2416,5 +2448,23 @@ const styles = StyleSheet.create({
   dropdownOptionLabelActive: {
     color: colors.primary,
     fontWeight: fontWeights.bold,
+  },
+  mustChangeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  mustChangeBadgeText: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+    color: '#be123c',
   },
 });

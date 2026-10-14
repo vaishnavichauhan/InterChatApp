@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDeviceId } from '../utils/device';
-import { getMyPermissions } from '../api/authApi';
+import { getMyPermissions, logoutUser } from '../api/authApi';
 import { getSocket, disconnectSocket } from '../utils/socket';
 
 export interface User {
@@ -18,6 +18,9 @@ export interface User {
   departments?: Array<{ department_id: number; department_name: string }>;
   department_ids?: number[];
   device_allow_download?: boolean;
+  must_change_password?: boolean | number | string;
+  is_vendor?: boolean | number;
+  can_chat_with_vendors?: boolean | number;
 }
 
 export interface UserPermissions {
@@ -42,6 +45,7 @@ interface AuthState {
   login: (user: User, token: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (partialUser: Partial<User>) => Promise<void>;
+  updateSession: (partialUser: Partial<User>, newToken?: string) => Promise<void>;
   refreshPermissions: () => Promise<void>;
 }
 
@@ -171,6 +175,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
+      const currentUser = get().user;
+      const deviceId = get().deviceId;
+      try {
+        await logoutUser({
+          deviceId: deviceId || undefined,
+          userId: currentUser?.id,
+        });
+      } catch (apiErr) {
+        console.warn('Backend logout API notice (proceeding with local signout):', apiErr);
+      }
+
       disconnectSocket();
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
@@ -192,6 +207,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const updated = { ...currentUser, ...partialUser };
     await AsyncStorage.setItem('user', JSON.stringify(updated));
     set({ user: updated });
+  },
+
+  updateSession: async (partialUser: Partial<User>, newToken?: string) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...partialUser };
+    await AsyncStorage.setItem('user', JSON.stringify(updated));
+    if (newToken) {
+      await AsyncStorage.setItem('token', newToken);
+      set({ user: updated, token: newToken });
+    } else {
+      set({ user: updated });
+    }
   },
 
   refreshPermissions: async () => {

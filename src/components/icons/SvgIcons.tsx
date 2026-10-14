@@ -33,6 +33,14 @@ export const ShieldCheckIcon: React.FC<IconProps> = ({ size = 20, color = '#10b9
   </Svg>
 );
 
+export const ShieldAlertIcon: React.FC<IconProps> = ({ size = 20, color = '#dc2626' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <Line x1={12} y1={8} x2={12} y2={12} />
+    <Line x1={12} y1={16} x2={12.01} y2={16} />
+  </Svg>
+);
+
 export const EyeIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
@@ -181,7 +189,7 @@ export const LogOutIcon: React.FC<IconProps> = ({ size = 18, color = '#ef4444' }
 );
 
 export const XMarkIcon: React.FC<IconProps> = ({ size = 20, color = '#64748b' }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
     <Line x1={18} y1={6} x2={6} y2={18} />
     <Line x1={6} y1={6} x2={18} y2={18} />
   </Svg>

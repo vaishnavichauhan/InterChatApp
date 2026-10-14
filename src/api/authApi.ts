@@ -20,8 +20,17 @@ export const requestDeviceRegistration = async (data: DeviceRegistrationPayload)
   return apiClient.post('/auth/request-device', data);
 };
 
-export const logoutUser = async () => {
-  return apiClient.post('/auth/logout');
+export interface ChangeFirstPasswordPayload {
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export const logoutUser = async (data?: { deviceId?: string; userId?: number }) => {
+  return apiClient.post('/auth/logout', data || {});
+};
+
+export const changeFirstPassword = async (data: ChangeFirstPasswordPayload) => {
+  return apiClient.post('/auth/change-first-password', data);
 };
 
 export const getMyPermissions = async () => {

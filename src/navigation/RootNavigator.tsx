@@ -22,6 +22,7 @@ import { useChatStore } from '../store/chatStore';
 import { useAppUpdateStore } from '../store/useAppUpdateStore';
 import { CURRENT_APP_VERSION, triggerApkDownload } from '../api/appUpdateApi';
 import { CompulsoryUpdateModal } from '../components/common/CompulsoryUpdateModal';
+import { ChangeFirstPasswordScreen } from '../screens/auth/ChangeFirstPasswordScreen';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
 import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
@@ -34,7 +35,7 @@ import { MinimizedCallBar } from '../components/call/MinimizedCallBar';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
-  const { isAuthenticated, isLoading, initialize } = useAuthStore();
+  const { isAuthenticated, isLoading, initialize, user } = useAuthStore();
   const { updateInfo } = useAppUpdateStore();
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const isAlertOpenRef = useRef(false);
@@ -119,12 +120,18 @@ export const RootNavigator = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated, checkUpdateAndEnforce]);
 
+  const isMustChangePassword = Boolean(
+    user?.must_change_password &&
+      user.must_change_password !== '0' &&
+      user.must_change_password !== 0
+  );
+
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isMustChangePassword) {
       useChatStore.getState().setupSocketListeners();
       useChatStore.getState().loadConversations(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isMustChangePassword]);
 
   if (isLoading) {
     return (
@@ -142,6 +149,11 @@ export const RootNavigator = () => {
           <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             {!isAuthenticated ? (
               <Stack.Screen name="Auth" component={AuthStack} />
+            ) : isMustChangePassword ? (
+              <Stack.Screen
+                name="ChangeFirstPassword"
+                component={ChangeFirstPasswordScreen}
+              />
             ) : (
               <>
                 <Stack.Screen name="MainTabs" component={MainTabNavigator} />
@@ -172,9 +184,9 @@ export const RootNavigator = () => {
               </>
             )}
           </Stack.Navigator>
-          {isAuthenticated && <WatermarkOverlay />}
+          {isAuthenticated && !isMustChangePassword && <WatermarkOverlay />}
           <ToastBanner />
-          {isAuthenticated && (
+          {isAuthenticated && !isMustChangePassword && (
             <>
               <IncomingCallModal />
               <ActiveCallModal />
