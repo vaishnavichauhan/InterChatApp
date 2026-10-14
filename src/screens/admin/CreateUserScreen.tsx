@@ -490,35 +490,17 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Top Header Banner ── */}
-          <View style={styles.headerBanner}>
-            <View style={styles.headerTagRow}>
-              <View style={styles.headerTagPill}>
-                <Text style={styles.headerTagText}>ENTERPRISE DIRECTORY</Text>
-              </View>
-              <View style={styles.headerCountPills}>
-                <Text style={styles.countPillText}>{departmentsList.length} Depts</Text>
-                <Text style={styles.countPillDot}>•</Text>
-                <Text style={styles.countPillText}>{companiesList.length} Companies</Text>
-                <Text style={styles.countPillDot}>•</Text>
-                <Text style={styles.countPillText}>{userTypes.length} Roles</Text>
-              </View>
-            </View>
-            <Text style={styles.headerBannerTitle}>Create User Account</Text>
-            <Text style={styles.headerBannerSub}>
-              Setup employee credentials, assign single or multiple departments, and define organizational messaging scope.
-            </Text>
-          </View>
+         
 
-          {/* ── CARD 1: Account Identity & Credentials ── */}
-          <View style={[styles.card, shadows.sm]}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderIconBox}>
+          {/* ── SECTION 1: Account Identity & Credentials ── */}
+          <View style={styles.sectionHeaderWrap}>
+            <View style={styles.sectionHeaderTopRow}>
+              <View style={styles.sectionHeaderIconBox}>
                 <UserIcon size={18} color={colors.primary} />
               </View>
-              <View style={styles.cardHeaderTextBox}>
-                <Text style={styles.cardHeaderTitle}>1. Account Identity & Credentials</Text>
-                <Text style={styles.cardHeaderSubtitle}>
+              <View style={styles.sectionHeaderTextBox}>
+                <Text style={styles.sectionHeaderTitle}>1. Account Identity & Credentials</Text>
+                <Text style={styles.sectionHeaderSubtitle}>
                   Employee personal profile details, authentication keys, and security settings
                 </Text>
               </View>
@@ -526,7 +508,10 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 <Text style={styles.stepBadgeText}>STEP 1</Text>
               </View>
             </View>
+          </View>
 
+          {/* ── FORM CARD 1: Account Identity & Credentials ── */}
+          <View style={[styles.card, shadows.sm]}>
             {/* Full Name */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
@@ -692,15 +677,15 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
             </View>
           </View>
 
-          {/* ── CARD 2: Role & Department Assignment ── */}
-          <View style={[styles.card, shadows.sm]}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardHeaderIconBox, { backgroundColor: '#f5f3ff' }]}>
+          {/* ── SECTION 2: Role & Department Assignment ── */}
+          <View style={styles.sectionHeaderWrap}>
+            <View style={styles.sectionHeaderTopRow}>
+              <View style={[styles.sectionHeaderIconBox, { backgroundColor: '#f5f3ff' }]}>
                 <ShieldUserIcon size={18} color="#7c3aed" />
               </View>
-              <View style={styles.cardHeaderTextBox}>
-                <Text style={styles.cardHeaderTitle}>2. Role & Department Assignment</Text>
-                <Text style={styles.cardHeaderSubtitle}>
+              <View style={styles.sectionHeaderTextBox}>
+                <Text style={styles.sectionHeaderTitle}>2. Role & Department Assignment</Text>
+                <Text style={styles.sectionHeaderSubtitle}>
                   Enterprise entity affiliation, permission level, and workgroup allocation
                 </Text>
               </View>
@@ -708,7 +693,10 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 <Text style={[styles.stepBadgeText, { color: '#7c3aed' }]}>STEP 2</Text>
               </View>
             </View>
+          </View>
 
+          {/* ── FORM CARD 2: Role & Department Assignment ── */}
+          <View style={[styles.card, shadows.sm]}>
             {/* 1. Primary Company Entity DROPDOWN (Requested by User) */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
@@ -988,15 +976,15 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
             </View>
           </View>
 
-          {/* ── CARD 3: Inter-Department Chat Permissions ── */}
-          <View style={[styles.card, shadows.sm]}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardHeaderIconBox, { backgroundColor: '#ecfdf5' }]}>
+          {/* ── SECTION 3: Inter-Department Chat Permissions ── */}
+          <View style={styles.sectionHeaderWrap}>
+            <View style={styles.sectionHeaderTopRow}>
+              <View style={[styles.sectionHeaderIconBox, { backgroundColor: '#ecfdf5' }]}>
                 <BuildingIcon size={18} color="#059669" />
               </View>
-              <View style={styles.cardHeaderTextBox}>
-                <Text style={styles.cardHeaderTitle}>3. Inter-Department Chat Permissions</Text>
-                <Text style={styles.cardHeaderSubtitle}>
+              <View style={styles.sectionHeaderTextBox}>
+                <Text style={styles.sectionHeaderTitle}>3. Inter-Department Chat Permissions</Text>
+                <Text style={styles.sectionHeaderSubtitle}>
                   Cross-department messaging rules within the company
                 </Text>
               </View>
@@ -1004,7 +992,10 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 <Text style={[styles.stepBadgeText, { color: '#059669' }]}>STEP 3</Text>
               </View>
             </View>
+          </View>
 
+          {/* ── FORM CARD 3: Inter-Department Chat Permissions ── */}
+          <View style={[styles.card, shadows.sm]}>
             {/* 3 Scope Options */}
             <View style={styles.scopeCardsGrid}>
               {/* Option 1: Own Dept Only */}
@@ -1147,15 +1138,15 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
             )}
           </View>
 
-          {/* ── CARD 4: Inter-Company Cross-Entity Access ── */}
-          <View style={[styles.card, shadows.sm]}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardHeaderIconBox, { backgroundColor: '#fdf4ff' }]}>
+          {/* ── SECTION 4: Inter-Company Cross-Entity Access ── */}
+          <View style={styles.sectionHeaderWrap}>
+            <View style={styles.sectionHeaderTopRow}>
+              <View style={[styles.sectionHeaderIconBox, { backgroundColor: '#fdf4ff' }]}>
                 <GlobeIcon size={18} color="#a21caf" />
               </View>
-              <View style={styles.cardHeaderTextBox}>
-                <Text style={styles.cardHeaderTitle}>4. Inter-Company Cross-Entity Access</Text>
-                <Text style={styles.cardHeaderSubtitle}>
+              <View style={styles.sectionHeaderTextBox}>
+                <Text style={styles.sectionHeaderTitle}>4. Inter-Company Cross-Entity Access</Text>
+                <Text style={styles.sectionHeaderSubtitle}>
                   Cross-organization messaging rules across enterprise subsidiaries
                 </Text>
               </View>
@@ -1163,7 +1154,10 @@ export const CreateUserScreen: React.FC<CreateUserScreenProps> = ({ navigation }
                 <Text style={[styles.stepBadgeText, { color: '#a21caf' }]}>STEP 4</Text>
               </View>
             </View>
+          </View>
 
+          {/* ── FORM CARD 4: Inter-Company Cross-Entity Access ── */}
+          <View style={[styles.card, shadows.sm]}>
             {/* 3 Scope Options */}
             <View style={styles.scopeCardsGrid}>
               {/* Option 1: Disabled */}
@@ -1841,12 +1835,46 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 18,
   },
+  /* ── SECTION HEADER ABOVE CARD ── */
+  sectionHeaderWrap: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs + 2,
+    paddingHorizontal: 2,
+  },
+  sectionHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionHeaderIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: colors.primarySubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeaderTextBox: {
+    flex: 1,
+  },
+  sectionHeaderTitle: {
+    fontSize: fontSizes.base,
+    fontWeight: fontWeights.black,
+    color: '#0f172a',
+    letterSpacing: -0.2,
+  },
+  sectionHeaderSubtitle: {
+    fontSize: 11.5,
+    color: '#64748b',
+    marginTop: 1,
+    lineHeight: 16,
+  },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
+    borderRadius: 18,
+    padding: spacing.md + 2,
+    marginBottom: spacing.lg,
+    borderWidth: 1.2,
     borderColor: '#e2e8f0',
   },
   cardHeader: {

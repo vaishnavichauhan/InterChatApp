@@ -78,8 +78,8 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
     >
       <AppHeader
         title="Create Company"
-        subtitle="Register a new company entity in the system"
         showBack
+        rightAction
         onBack={() => navigation.goBack()}
       />
 
@@ -90,16 +90,6 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
       >
         {/* ── Form Card ── */}
         <View style={[styles.card, shadows.sm]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderIconWrap}>
-              <CityIcon size={20} color="#2563eb" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cardTitle}>Company Information</Text>
-              <Text style={styles.cardSubtitle}>Provide the basic details for the company</Text>
-            </View>
-          </View>
-
           <View style={styles.formBody}>
             {/* 1. Company Name */}
             <View style={styles.formGroup}>
@@ -110,7 +100,7 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
                 <CityIcon size={16} color={colors.textMuted} />
                 <TextInput
                   style={styles.iconInput}
-                  placeholder="e.g. Epoxy House, Acme Corp, Company B"
+                  placeholder="e.g. Epoxy House"
                   placeholderTextColor={colors.textLight}
                   value={companyName}
                   onChangeText={setCompanyName}
@@ -124,7 +114,7 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
               <Text style={styles.label}>Company Description</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Brief overview of company operations, industry domain or business nature..."
+                placeholder="Brief overview of company..."
                 placeholderTextColor={colors.textLight}
                 value={description}
                 onChangeText={setDescription}
@@ -141,7 +131,7 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
                 <PhoneIcon size={16} color={colors.textMuted} />
                 <TextInput
                   style={styles.iconInput}
-                  placeholder="e.g. +91 9876543210 or 022-24901234"
+                  placeholder=""
                   placeholderTextColor={colors.textLight}
                   value={phone}
                   onChangeText={setPhone}
@@ -159,7 +149,7 @@ export const CreateCompanyScreen: React.FC<CreateCompanyScreenProps> = ({ naviga
                 </View>
                 <TextInput
                   style={[styles.input, styles.textAreaWithIcon]}
-                  placeholder="Full office or registered address (Street, City, State, PIN)..."
+                  placeholder="Full office or registered address..."
                   placeholderTextColor={colors.textLight}
                   value={address}
                   onChangeText={setAddress}

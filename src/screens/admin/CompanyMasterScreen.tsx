@@ -221,21 +221,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
     );
   };
 
-  // View Company Departments Modal
-  const openDepartmentsModal = async (comp: Company) => {
-    setViewingCompany(comp);
-    setIsDeptModalOpen(true);
-    setLoadingDepts(true);
-    try {
-      const res = await getCompanyById(comp.id);
-      const full = res?.company || res?.data || res || comp;
-      setViewingCompany(full);
-    } catch (err) {
-      console.warn('Failed to load company departments:', err);
-    } finally {
-      setLoadingDepts(false);
-    }
-  };
+  
 
   // List Header with Search & Status Dropdown
   const renderHeader = () => (
@@ -329,28 +315,13 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
       />
 
       {/* ── KPI Statistics Ribbon ── */}
-      <View style={styles.kpiRibbon}>
-        <View style={styles.kpiItem}>
-          <Text style={styles.kpiVal}>{stats.total}</Text>
-          <Text style={styles.kpiLbl}>Total Entities</Text>
-        </View>
-        <View style={styles.kpiSep} />
-        <View style={styles.kpiItem}>
-          <Text style={[styles.kpiVal, { color: '#059669' }]}>{stats.active}</Text>
-          <Text style={styles.kpiLbl}>Active</Text>
-        </View>
-        <View style={styles.kpiSep} />
-        <View style={styles.kpiItem}>
-          <Text style={[styles.kpiVal, { color: '#64748b' }]}>{stats.inactive}</Text>
-          <Text style={styles.kpiLbl}>Inactive</Text>
-        </View>
-      </View>
+  
 
       {/* ── Main List ── */}
       {loading ? (
         <View style={styles.centerLoading}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading companies...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       ) : (
         <FlatList
@@ -367,8 +338,14 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
             const initial = item.company_name ? item.company_name.trim().charAt(0).toUpperCase() : 'C';
 
             return (
-              <View style={[styles.compCard, shadows.sm]}>
-                {/* ── Card Header: Avatar + Title + Status Pill ── */}
+              <View
+                style={[
+                  styles.compCard,
+                  shadows.sm,
+                  item.is_main && styles.compCardMain,
+                ]}
+              >
+                {/* ── Card Header: Avatar Badge + Title & Subtitle + Status Pill ── */}
                 <View style={styles.cardHeaderRow}>
                   <View
                     style={[
@@ -379,7 +356,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                     <Text style={styles.avatarText}>{initial}</Text>
                     {item.is_main && (
                       <View style={styles.mainCrownBadge}>
-                        <CrownIcon size={10} color="#ffffff" />
+                        <CrownIcon size={9} color="#ffffff" />
                       </View>
                     )}
                   </View>
@@ -391,13 +368,17 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                       </Text>
                       {item.is_main && (
                         <View style={styles.mainTag}>
-                          <Text style={styles.mainTagText}>MAIN</Text>
+                          <CrownIcon size={9} color="#7c3aed" />
+                          <Text style={styles.mainTagText}>MAIN HQ</Text>
                         </View>
                       )}
                     </View>
+                    <Text style={styles.compSubId}>
+                      ID: #{item.id} {item.company_code ? `• ${item.company_code}` : ''}
+                    </Text>
                   </View>
 
-                  {/* Status Pill matching web */}
+                  {/* Status Pill */}
                   <View
                     style={[
                       styles.statusPill,
@@ -421,54 +402,59 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                   </View>
                 </View>
 
-                {/* ── Description (Web Column 2) ── */}
-                <View style={styles.descSection}>
-                  <Text style={styles.sectionFieldLabel}>Description</Text>
-                  <Text style={styles.cardDesc} numberOfLines={2}>
-                    {item.description ? item.description : 'No description'}
+                {/* ── Description: Modern Callout Box ── */}
+                <View style={[styles.descBox, item.is_main && styles.descBoxMain]}>
+                  <Text
+                    style={[
+                      styles.cardDesc,
+                      !item.description && styles.cardDescEmpty,
+                    ]}
+                    numberOfLines={5}
+                  >
+                    {item.description ? item.description : 'No company description provided.'}
                   </Text>
                 </View>
 
-                {/* ── Contact Details: Mobile & Address (Web Columns 3 & 4) ── */}
-                <View style={styles.contactDetailsSection}>
-                  {/* Mobile Number */}
-                  <View style={styles.fieldRow}>
-                    <View style={styles.fieldRowIconWrap}>
-                      <PhoneIcon size={13} color="#64748b" />
+                {/* ── Contact Details: Modern Info Chips (Phone & Address) ── */}
+                <View style={styles.contactDetailsRow}>
+                  {/* Phone Chip */}
+                  <View style={styles.contactChip}>
+                    <View style={[styles.contactIconCircle, styles.phoneIconCircle]}>
+                      <PhoneIcon size={12} color="#2563eb" />
                     </View>
-                    <Text style={styles.fieldText}>
-                      {item.phone || '—'}
+                    <Text style={styles.contactChipText} numberOfLines={1}>
+                      {item.phone || 'No phone'}
                     </Text>
                   </View>
 
-                  {/* Address (Dedicated field as requested) */}
-                  <View style={styles.fieldRow}>
-                    <View style={styles.fieldRowIconWrap}>
-                      <MapPinIcon size={14} color="#64748b" />
+                  {/* Address Chip */}
+               
+                </View>
+                   <View style={[styles.contactChip, styles.addressChip]}>
+                    <View style={[styles.contactIconCircle, styles.addressIconCircle]}>
+                      <MapPinIcon size={12} color="#dc2626" />
                     </View>
-                    <Text style={styles.fieldText} numberOfLines={2}>
-                      {item.address || 'No address provided'}
+                    <Text style={styles.contactChipText} numberOfLines={4}>
+                      {item.address || 'No address'}
                     </Text>
                   </View>
-                </View>
 
                 {/* ── Card Divider ── */}
                 <View style={styles.cardDivider} />
 
-                {/* ── Card Footer: Metrics & Actions (Web Columns 5 & 6) ── */}
+                {/* ── Card Footer: Metadata & Actions ── */}
                 <View style={styles.cardFooterRow}>
-                  {/* View Departments Button */}
-                  <TouchableOpacity
-                    style={styles.metricChipBlue}
-                    onPress={() => openDepartmentsModal(item)}
-                    activeOpacity={0.7}
-                  >
-                    <BuildingIcon size={12} color="#1d4ed8" />
-                    <Text style={styles.metricChipTextBlue}>
-                      {item.department_count || (item.departments ? item.departments.length : 0)} Depts
+                  {/* Entity Metadata Badge */}
+                  <View style={styles.metaBadge}>
+                    <BuildingIcon size={11} color="#64748b" />
+                    <Text style={styles.metaBadgeText}>
+                      {item.department_count !== undefined
+                        ? `${item.department_count} Depts`
+                        : item.is_main
+                        ? 'Parent Entity'
+                        : 'Subsidiary'}
                     </Text>
-                    <ChevronRightIcon size={11} color="#2563eb" />
-                  </TouchableOpacity>
+                  </View>
 
                   {/* Actions Group: Edit, Disable/Enable, Delete */}
                   <View style={styles.cardActionsGroup}>
@@ -478,7 +464,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                       onPress={() => openEditModal(item)}
                       activeOpacity={0.7}
                     >
-                      <EditIcon size={11} color="#4338ca" />
+                      <EditIcon size={12} color="#4338ca" />
                       <Text style={styles.actionBtnEditText}>Edit</Text>
                     </TouchableOpacity>
 
@@ -492,9 +478,9 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                       activeOpacity={0.7}
                     >
                       {isActive ? (
-                        <BanIcon size={11} color="#b45309" />
+                        <BanIcon size={12} color="#b45309" />
                       ) : (
-                        <CheckIcon size={11} color="#047857" />
+                        <CheckIcon size={12} color="#047857" />
                       )}
                       <Text
                         style={[
@@ -513,7 +499,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
                         onPress={() => handleDeleteCompany(item)}
                         activeOpacity={0.7}
                       >
-                        <TrashIcon size={11} color="#be123c" />
+                        <TrashIcon size={12} color="#be123c" />
                         <Text style={styles.actionBtnDeleteText}>Delete</Text>
                       </TouchableOpacity>
                     )}
@@ -544,7 +530,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
           onPress={() => setIsDropdownOpen(false)}
         >
           <View style={[styles.dropdownModalContent, shadows.lg]}>
-            <Text style={styles.dropdownModalTitle}>Filter by Status</Text>
+            <Text style={styles.dropdownModalTitle}>Company Status</Text>
 
             <TouchableOpacity
               style={[
@@ -557,7 +543,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
               }}
             >
               <View style={[styles.statusDot, { backgroundColor: '#2563eb' }]} />
-              <Text style={styles.dropdownOptionText}>All Companies ({stats.total})</Text>
+              <Text style={styles.dropdownOptionText}>All ({stats.total})</Text>
               {statusFilter === 'all' && <CheckIcon size={14} color="#2563eb" />}
             </TouchableOpacity>
 
@@ -572,7 +558,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
               }}
             >
               <View style={[styles.statusDot, { backgroundColor: '#10b981' }]} />
-              <Text style={styles.dropdownOptionText}>Active Only ({stats.active})</Text>
+              <Text style={styles.dropdownOptionText}>Active ({stats.active})</Text>
               {statusFilter === 'ACTIVE' && <CheckIcon size={14} color="#10b981" />}
             </TouchableOpacity>
 
@@ -587,7 +573,7 @@ export const CompanyMasterScreen: React.FC<CompanyMasterScreenProps> = ({ naviga
               }}
             >
               <View style={[styles.statusDot, { backgroundColor: '#94a3b8' }]} />
-              <Text style={styles.dropdownOptionText}>Inactive Only ({stats.inactive})</Text>
+              <Text style={styles.dropdownOptionText}>Inactive ({stats.inactive})</Text>
               {statusFilter === 'INACTIVE' && <CheckIcon size={14} color="#94a3b8" />}
             </TouchableOpacity>
           </View>
@@ -856,41 +842,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     letterSpacing: 0.2,
   },
-
-  /* ── KPI Statistics Ribbon ── */
-  kpiRibbon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  kpiItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  kpiVal: {
-    fontSize: fontSizes.md,
-    fontWeight: fontWeights.extrabold,
-    color: colors.textPrimary,
-  },
-  kpiLbl: {
-    fontSize: 10,
-    fontWeight: fontWeights.bold,
-    color: colors.textMuted,
-    marginTop: 2,
-    textTransform: 'uppercase',
-  },
-  kpiSep: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#e2e8f0',
-  },
-
   /* ── Search & Filters Header ── */
   listHeader: {
     paddingHorizontal: spacing.lg,
@@ -943,14 +894,19 @@ const styles = StyleSheet.create({
   },
 
   /* ── Company Card Architecture ── */
+  /* ── Company Card Architecture (Modern Enterprise Style) ── */
   compCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: spacing.md,
+    borderRadius: 18,
+    padding: spacing.md + 2,
     marginHorizontal: spacing.lg,
-    marginVertical: 6,
-    borderWidth: 1,
+    marginVertical: 7,
+    borderWidth: 1.2,
     borderColor: '#e2e8f0',
+  },
+  compCardMain: {
+    borderColor: '#c7d2fe',
+    backgroundColor: '#ffffff',
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -958,70 +914,85 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   avatarBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginRight: spacing.sm,
+    marginRight: spacing.sm + 2,
   },
   avatarBoxNormal: {
-    backgroundColor: '#2D333B',
+    backgroundColor: '#1e293b',
   },
   avatarBoxMain: {
-    backgroundColor: '#7c3aed',
+    backgroundColor: '#6366f1',
   },
   avatarText: {
-    fontSize: fontSizes.sm,
+    fontSize: 16,
     fontWeight: fontWeights.extrabold,
     color: '#ffffff',
   },
   mainCrownBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -5,
+    right: -5,
     backgroundColor: '#f59e0b',
-    borderRadius: 8,
-    width: 14,
-    height: 14,
+    borderRadius: 9,
+    width: 17,
+    height: 17,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
   },
   compInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   compName: {
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.base,
     fontWeight: fontWeights.extrabold,
-    color: colors.textPrimary,
+    color: '#0f172a',
+    letterSpacing: -0.2,
+  },
+  compSubId: {
+    fontSize: 11,
+    fontWeight: fontWeights.medium,
+    color: '#94a3b8',
+    marginTop: 2,
   },
   mainTag: {
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 4,
-    backgroundColor: '#faf5ff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#f5f3ff',
     borderWidth: 1,
-    borderColor: '#e9d5ff',
+    borderColor: '#ddd6fe',
   },
   mainTagText: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: fontWeights.extrabold,
     color: '#7c3aed',
+    letterSpacing: 0.3,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 4,
+    gap: 5,
   },
   statusPillActive: {
     backgroundColor: '#ecfdf5',
@@ -1042,50 +1013,80 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  /* ── Description & Contact Details ── */
-  descSection: {
-    marginTop: 4,
-    marginBottom: 4,
+  /* ── Description Callout Box ── */
+  descBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+    marginTop: 10,
+    marginBottom: 8,
   },
-  sectionFieldLabel: {
-    fontSize: 9.5,
-    fontWeight: fontWeights.extrabold,
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 1,
+  descBoxMain: {
+    borderLeftColor: '#6366f1',
+    backgroundColor: '#faf5ff',
   },
   cardDesc: {
     fontSize: fontSizes.xs,
-    color: colors.textSecondary,
-    lineHeight: 17,
+    color: '#334155',
+    lineHeight: 18,
+    fontWeight: fontWeights.regular,
   },
-  contactDetailsSection: {
-    marginTop: 4,
-    gap: 4,
+  cardDescEmpty: {
+    color: '#94a3b8',
+    fontStyle: 'italic',
   },
-  fieldRow: {
+
+  /* ── Contact Details: Modern Info Chips ── */
+  contactDetailsRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-  },
-  fieldRowIconWrap: {
-    marginTop: 2,
-    width: 16,
     alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
   },
-  fieldText: {
+  contactChip: {
     flex: 1,
-    fontSize: fontSizes.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  addressChip: {
+    flex: 1.25,
+  },
+  contactIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phoneIconCircle: {
+    backgroundColor: '#eff6ff',
+  },
+  addressIconCircle: {
+    backgroundColor: '#fef2f2',
+  },
+  contactChipText: {
+    flex: 1,
+    fontSize: 11.5,
+    fontWeight: fontWeights.medium,
     color: '#475569',
-    lineHeight: 17,
   },
 
   /* ── Card Divider & Footer ── */
   cardDivider: {
     height: 1,
     backgroundColor: '#f1f5f9',
-    marginVertical: spacing.sm,
+    marginTop: 12,
+    marginBottom: 10,
   },
   cardFooterRow: {
     flexDirection: 'row',
@@ -1093,21 +1094,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.xs,
   },
-  metricChipBlue: {
+  metaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
     gap: 4,
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  metricChipTextBlue: {
+  metaBadgeText: {
     fontSize: 10.5,
-    fontWeight: fontWeights.bold,
-    color: '#1d4ed8',
+    fontWeight: fontWeights.semibold,
+    color: '#64748b',
   },
 
   /* ── Card Actions Row ── */
@@ -1119,8 +1118,8 @@ const styles = StyleSheet.create({
   actionBtnEdit: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: '#eef2ff',
     borderWidth: 1,
@@ -1128,25 +1127,25 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionBtnEditText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: fontWeights.bold,
     color: '#4338ca',
   },
   actionBtnToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
     gap: 4,
   },
   actionBtnDisable: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#fffbeb',
     borderColor: '#fde68a',
   },
   actionBtnToggleText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: fontWeights.bold,
   },
   actionBtnDisableText: {
@@ -1157,15 +1156,15 @@ const styles = StyleSheet.create({
     borderColor: '#a7f3d0',
   },
   actionBtnEnableText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: fontWeights.bold,
     color: '#047857',
   },
   actionBtnDelete: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: '#fff1f2',
     borderWidth: 1,
@@ -1173,7 +1172,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionBtnDeleteText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: fontWeights.bold,
     color: '#be123c',
   },

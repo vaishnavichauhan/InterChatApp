@@ -45,8 +45,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ChevronRightIcon,
+  DownloadIcon,
+  RefreshIcon,
 } from '../../components/icons/SvgIcons';
 import { useAuthStore, isUserAdminRole } from '../../store/authStore';
+import { useAppUpdateStore } from '../../store/useAppUpdateStore';
+import { CURRENT_APP_VERSION, triggerApkDownload } from '../../api/appUpdateApi';
 import { updateProfile } from '../../api/authApi';
 import { getDashboardStats } from '../../api/adminApi';
 import { getInitials } from '../../utils/formatters';
@@ -60,6 +64,7 @@ export const ProfileScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const { user, logout, updateUser } = useAuthStore();
+  const { updateInfo, checkForUpdates, checkingUpdate, hasUpdateAvailable } = useAppUpdateStore();
   const scrollViewRef = useRef<ScrollViewInstance>(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -67,6 +72,46 @@ export const ProfileScreen: React.FC = () => {
   const [email, setEmail] = useState(user?.email || '');
   const [mobNo, setMobNo] = useState(user?.mob_no || '');
   const [saving, setSaving] = useState(false);
+
+  const handleCheckUpdate = async (isManual = true) => {
+    try {
+      const res = await checkForUpdates();
+      if (isManual) {
+        if (res?.updateRequired) {
+          Alert.alert(
+            'Update Required',
+            `Update is compulsory. A new version (${res.latestVersion || 'latest'}) is available. Please update the application to continue.`,
+            [
+              { text: 'Close', style: 'cancel' },
+              {
+                text: 'Update Now',
+                onPress: () =>
+                  triggerApkDownload(
+                    res.downloadUrl,
+                    res.apkAvailable,
+                    res.latestVersion
+                  ),
+              },
+            ]
+          );
+        } else if (res?.success) {
+          Alert.alert(
+            'App Up to Date',
+            `You are already using the latest version of InterChat (v${CURRENT_APP_VERSION}).`
+          );
+        } else {
+          Alert.alert(
+            'Update Check Failed',
+            'Could not retrieve update information from the server. Please check your network connection.'
+          );
+        }
+      }
+    } catch (err: any) {
+      if (isManual) {
+        Alert.alert('Update Check Failed', err?.message || 'Something went wrong.');
+      }
+    }
+  };
 
   // Admin Dashboard stats
   const [stats, setStats] = useState<any>(null);
@@ -129,7 +174,8 @@ export const ProfileScreen: React.FC = () => {
       if (isUserAdminRole(user)) {
         fetchStats();
       }
-    }, [user])
+      checkForUpdates();
+    }, [user, checkForUpdates])
   );
 
   const totalUsers = stats?.users?.total ?? '—';
@@ -635,7 +681,95 @@ export const ProfileScreen: React.FC = () => {
             </View>
           )}
 
-          {/* 4. Logout Button */}
+          {/* 4. App Version & Updates Section Card */}
+          <View style={[styles.infoCard, shadows.sm, hasUpdateAvailable && styles.updateCardHighlight]}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionIconBadge, hasUpdateAvailable && { backgroundColor: '#FEE2E2' }]}>
+                  <DownloadIcon size={16} color={hasUpdateAvailable ? colors.primary : '#2563EB'} />
+                </View>
+                <View style={styles.sectionHeaderTitleCol}>
+                  <Text style={styles.sectionTitle}>App Version & Updates</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    {hasUpdateAvailable ? 'New application build available' : 'InterChat is up to date'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Status Badge */}
+              {hasUpdateAvailable ? (
+                <View style={styles.statusBadgeUpdate}>
+                  <Text style={styles.statusBadgeUpdateText}>New version ready</Text>
+                </View>
+              ) : (
+                <View style={styles.statusBadgeUpToDate}>
+                  <Text style={styles.statusBadgeUpToDateText}>Up to date ✓</Text>
+                </View>
+              )}
+            </View>
+
+            
+
+            {/* If update message is available */}
+            {hasUpdateAvailable && updateInfo?.message ? (
+              <View style={styles.profileUpdateMsgBox}>
+                <Text style={styles.profileUpdateMsgText}>{updateInfo.message}</Text>
+              </View>
+            ) : null}
+
+            {/* Action Buttons */}
+            <View style={styles.profileUpdateActions}>
+              {/* Download Update button if update available */}
+              {hasUpdateAvailable && (
+                <TouchableOpacity
+                  style={[styles.profileDownloadBtn, shadows.md]}
+                  onPress={() =>
+                    triggerApkDownload(
+                      updateInfo?.downloadUrl,
+                      updateInfo?.apkAvailable,
+                      updateInfo?.latestVersion
+                    )
+                  }
+                  activeOpacity={0.85}
+                >
+                  <DownloadIcon size={16} color="#ffffff" />
+                  <Text style={styles.profileDownloadBtnText}>Download Update</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Check for Updates button with loading state */}
+              <TouchableOpacity
+                style={[
+                  styles.profileCheckBtn,
+                  hasUpdateAvailable && styles.profileCheckBtnSecondary,
+                ]}
+                onPress={() => handleCheckUpdate(true)}
+                disabled={checkingUpdate}
+                activeOpacity={0.7}
+              >
+                {checkingUpdate ? (
+                  <View style={styles.profileBtnInner}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.profileCheckBtnText}>Checking for updates...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.profileBtnInner}>
+                    <RefreshIcon size={15} color={hasUpdateAvailable ? colors.textSecondary : colors.primary} />
+                    <Text
+                      style={[
+                        styles.profileCheckBtnText,
+                        hasUpdateAvailable && { color: colors.textSecondary },
+                      ]}
+                    >
+                      Check for Updates
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 5. Logout Button */}
           <TouchableOpacity
             style={[styles.logoutCardBtn, shadows.sm]}
             onPress={handleLogout}
@@ -645,7 +779,7 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.logoutCardBtnText}>Sign Out of Device</Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Inter_Chat Version 01.13.10</Text>
+          <Text style={styles.versionText}>Inter_Chat Version {CURRENT_APP_VERSION}</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -1096,6 +1230,158 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     fontWeight: fontWeights.bold,
     color: '#ffffff',
+  },
+
+  /* ── APP VERSION & UPDATES SECTION ── */
+  updateCardHighlight: {
+    borderColor: '#FECDD3',
+    backgroundColor: '#FFFBFB',
+  },
+  statusBadgeUpdate: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+    borderWidth: 1,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  statusBadgeUpdateText: {
+    color: '#DC2626',
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
+  },
+  statusBadgeUpToDate: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#86EFAC',
+    borderWidth: 1,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  statusBadgeUpToDateText: {
+    color: '#059669',
+    fontSize: 11,
+    fontWeight: fontWeights.bold,
+  },
+  profileVersionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  profileVersionBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  profileVersionBoxLatest: {
+    backgroundColor: '#FFF1F2',
+    borderRadius: borderRadius.md,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+  },
+  profileVersionLabel: {
+    fontSize: 9,
+    fontWeight: fontWeights.bold,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  profileVersionLabelLatest: {
+    color: colors.primaryDark,
+  },
+  profileVersionPill: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  profileVersionPillNeutral: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+  },
+  profileVersionPillLatest: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FECDD3',
+  },
+  profileVersionPillText: {
+    fontSize: 13,
+    fontWeight: fontWeights.bold,
+    color: colors.textPrimary,
+  },
+  profileVersionPillTextNeutral: {
+    color: colors.textPrimary,
+  },
+  profileVersionPillTextLatest: {
+    color: '#DC2626',
+  },
+  profileVersionArrowWrap: {
+    paddingHorizontal: spacing.sm,
+  },
+  profileVersionArrow: {
+    fontSize: fontSizes.md,
+    color: colors.primary,
+    fontWeight: fontWeights.bold,
+  },
+  profileUpdateMsgBox: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  profileUpdateMsgText: {
+    fontSize: 11,
+    color: '#7C2D12',
+    lineHeight: 16,
+  },
+  profileUpdateActions: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  profileDownloadBtn: {
+    backgroundColor: colors.buttonPrimary,
+    borderRadius: borderRadius.lg,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  profileDownloadBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: fontWeights.bold,
+  },
+  profileCheckBtn: {
+    backgroundColor: '#FFF5F5',
+    borderRadius: borderRadius.lg,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+  },
+  profileCheckBtnSecondary: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+  },
+  profileCheckBtnText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: fontWeights.semibold,
+  },
+  profileBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
 
   /* ── LOGOUT BUTTON ── */

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, ActivityIndicator, StyleSheet, AppState, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
@@ -19,6 +19,9 @@ import { CloudStorageMasterScreen } from '../screens/admin/CloudStorageMasterScr
 import { BulkUserImportScreen } from '../screens/admin/BulkUserImportScreen';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
+import { useAppUpdateStore } from '../store/useAppUpdateStore';
+import { CURRENT_APP_VERSION, triggerApkDownload } from '../api/appUpdateApi';
+import { CompulsoryUpdateModal } from '../components/common/CompulsoryUpdateModal';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme';
 import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
@@ -32,10 +35,89 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
+  const { updateInfo } = useAppUpdateStore();
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const isAlertOpenRef = useRef(false);
+
+  const showUpdateRequiredAlert = useCallback(
+    (latestVersion?: string, downloadUrl?: string, apkAvailable?: boolean) => {
+      if (isAlertOpenRef.current) return;
+      isAlertOpenRef.current = true;
+
+      const currentInfo = useAppUpdateStore.getState().updateInfo;
+      const latest = latestVersion || currentInfo?.latestVersion || 'latest';
+      const url = downloadUrl !== undefined ? downloadUrl : currentInfo?.downloadUrl;
+      const isApk = apkAvailable !== undefined ? apkAvailable : currentInfo?.apkAvailable;
+
+      Alert.alert(
+        'Update Required',
+        `Update is compulsory. A new version (${latest}) is available. Please update the application to continue.`,
+        [
+          {
+            text: 'Close',
+            style: 'cancel',
+            onPress: () => {
+              isAlertOpenRef.current = false;
+            },
+          },
+          {
+            text: 'Update Now',
+            onPress: () => {
+              isAlertOpenRef.current = false;
+              triggerApkDownload(url, isApk, latest);
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    },
+    []
+  );
+
+  const checkUpdateAndEnforce = useCallback(async () => {
+    try {
+      const res = await useAppUpdateStore.getState().checkForUpdates();
+      if (res?.updateRequired) {
+        // If user is currently authenticated on any screen, log out and show Update Required alert
+        if (useAuthStore.getState().isAuthenticated) {
+          await useAuthStore.getState().logout();
+          showUpdateRequiredAlert(res.latestVersion, res.downloadUrl, res.apkAvailable);
+        }
+      }
+    } catch (err) {
+      console.warn('[RootNavigator] Update check error:', err);
+    }
+  }, [showUpdateRequiredAlert]);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Initial update check on app launch & AppState listener on foreground return
+  useEffect(() => {
+    checkUpdateAndEnforce();
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkUpdateAndEnforce();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkUpdateAndEnforce]);
+
+  // Periodic update check while user is authenticated on any screen (every 60s)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const interval = setInterval(() => {
+      checkUpdateAndEnforce();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, checkUpdateAndEnforce]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -99,6 +181,22 @@ export const RootNavigator = () => {
               <MinimizedCallBar />
             </>
           )}
+          <CompulsoryUpdateModal
+            visible={updateModalVisible}
+            latestVersion={updateInfo?.latestVersion}
+            currentVersion={CURRENT_APP_VERSION}
+            onUpdate={() => {
+              setUpdateModalVisible(false);
+              triggerApkDownload(
+                updateInfo?.downloadUrl,
+                updateInfo?.apkAvailable,
+                updateInfo?.latestVersion
+              );
+            }}
+            onClose={() => {
+              setUpdateModalVisible(false);
+            }}
+          />
         </View>
       </NavigationContainer>
     </CallProvider>

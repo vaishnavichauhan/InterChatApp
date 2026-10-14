@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,10 +22,14 @@ import {
   ArrowLeftIcon,
   AlertCircleIcon,
   CheckIcon,
+  DownloadIcon,
+  RefreshIcon,
 } from '../../components/icons/SvgIcons';
 import { loginUser } from '../../api/authApi';
 import { getDeviceId } from '../../utils/device';
 import { useAuthStore } from '../../store/authStore';
+import { useAppUpdateStore } from '../../store/useAppUpdateStore';
+import { CURRENT_APP_VERSION, triggerApkDownload } from '../../api/appUpdateApi';
 import { EpoxyHouseBrandLogo } from '../../components/common/EpoxyHouseBrandLogo';
 
 interface LoginScreenProps {
@@ -36,6 +40,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const login = useAuthStore((state) => state.login);
   const setLoginSuccessNotice = useAuthStore((state) => state.setLoginSuccessNotice);
+  const { updateInfo, checkForUpdates, checkingUpdate, hasUpdateAvailable } = useAppUpdateStore();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -43,10 +48,62 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Check for updates on mount
+  useEffect(() => {
+    checkForUpdates();
+  }, [checkForUpdates]);
+
+  const handleShowUpdateAlert = (latestVer?: string, downloadUrl?: string, apkAvailable?: boolean) => {
+    const latest = latestVer || updateInfo?.latestVersion || 'latest';
+    const targetUrl = downloadUrl !== undefined ? downloadUrl : updateInfo?.downloadUrl;
+    const isApk = apkAvailable !== undefined ? apkAvailable : updateInfo?.apkAvailable;
+
+    Alert.alert(
+      'Update Required',
+      `Update is compulsory. A new version (${latest}) is available. Please update the application to continue.`,
+      [
+        { text: 'Close', style: 'cancel' },
+        {
+          text: 'Update Now',
+          onPress: () => triggerApkDownload(targetUrl, isApk, latest),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  const handleManualCheckUpdate = async () => {
+    try {
+      const res = await checkForUpdates();
+      if (res?.updateRequired) {
+        handleShowUpdateAlert(res.latestVersion, res.downloadUrl, res.apkAvailable);
+      } else if (res?.success) {
+        Alert.alert(
+          'App Up to Date',
+          `You are already using the latest version of InterChat (v${CURRENT_APP_VERSION}).`
+        );
+      } else {
+        Alert.alert(
+          'Update Check Failed',
+          'Could not retrieve update information from the server. Please check your network connection.'
+        );
+      }
+    } catch (e: any) {
+      console.warn('[LoginScreen] Manual check error:', e);
+      Alert.alert('Update Check Failed', e?.message || 'Something went wrong.');
+    }
+  };
+
   const handleLogin = async () => {
     // Clear previous feedback
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    // Compulsory update blocker
+    if (updateInfo?.updateRequired || hasUpdateAvailable) {
+      handleShowUpdateAlert();
+      return;
+    }
 
     if (!username.trim() || !password.trim()) {
       setErrorMessage('Please enter both your username and password.');
@@ -117,7 +174,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         bounces={false}
       >
         {/* ── Top Navigation Bar ── */}
-        <View style={[styles.topBar, { paddingTop: topInset + 8 }]}>
+        <View style={[styles.topBar, { paddingTop: topInset + 18 }]}>
           {navigation.canGoBack?.() ? (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -240,6 +297,65 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 )}
               </TouchableOpacity>
             </View>
+
+            {/* ── App Version & Updates Section ── */}
+            {updateInfo?.updateRequired || hasUpdateAvailable ? (
+              <View style={styles.updatePromptBox}>
+                <View style={styles.updatePromptHeader}>
+                  <View style={styles.updateBadge}>
+                    <Text style={styles.updateBadgeText}>UPDATE REQUIRED</Text>
+                  </View>
+                  <Text style={styles.updateVersionDiffText}>
+                    v{CURRENT_APP_VERSION} ➔ v{updateInfo?.latestVersion || 'New'}
+                  </Text>
+                </View>
+
+                <View style={styles.updateActionRow}>
+                  <Text style={styles.updatePromptMsg} numberOfLines={2}>
+                    {updateInfo?.message || 'A mandatory application update is available. Please update to continue.'}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[styles.updateActionBtn, shadows.sm]}
+                    activeOpacity={0.88}
+                    onPress={() => handleShowUpdateAlert()}
+                  >
+                    <DownloadIcon size={14} color="#ffffff" />
+                    <Text style={styles.updateActionBtnText}>Update</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.bottomCurrentVersionText}>
+                  Current App Version: v{CURRENT_APP_VERSION}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.versionCheckSection}>
+                <View style={styles.versionInfoRow}>
+                  <Text style={styles.versionLabelText}>Current App Version: </Text>
+                  <Text style={styles.versionValueText}>v{CURRENT_APP_VERSION}</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.checkUpdateBtn}
+                  onPress={handleManualCheckUpdate}
+                  disabled={checkingUpdate}
+                  activeOpacity={0.7}
+                >
+                  {checkingUpdate ? (
+                    <View style={styles.checkUpdateContent}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.checkUpdateBtnText}>Checking for updates...</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.checkUpdateContent}>
+                      <RefreshIcon size={14} color={colors.primary} />
+                      <Text style={styles.checkUpdateBtnText}>Check for Updates</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -278,8 +394,8 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
 
   /* Form Section */
@@ -287,13 +403,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   formCard: {
-    // backgroundColor: '#ffffff',
-    // borderRadius: 22,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    borderWidth: 1.2,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
-    // borderWidth: 0.4,
-    // borderColor: '#e8e8e8',
   },
   formTitleRow: {
     flexDirection: 'row',
@@ -401,6 +517,133 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: '#15803D',
+    fontWeight: fontWeights.semibold,
+  },
+  /* Update Notification Banner */
+  /* ── App Version & Update Prompt UI ── */
+  updatePromptBox: {
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+  },
+  updatePromptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  updateBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  updateBadgeText: {
+    fontSize: 10,
+    fontWeight: fontWeights.bold,
+    color: '#DC2626',
+    letterSpacing: 0.5,
+  },
+  updateVersionDiffText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.primaryDark,
+  },
+  currentVersionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  currentVersionNotice: {
+    fontSize: fontSizes.xs,
+    color: colors.textSecondary,
+    fontWeight: fontWeights.medium,
+  },
+  currentVersionBold: {
+    fontWeight: fontWeights.bold,
+    color: colors.primaryDark,
+  },
+  updateActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  updatePromptMsg: {
+    flex: 1,
+    fontSize: fontSizes.xs,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  updateActionBtn: {
+    backgroundColor: colors.buttonPrimary,
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  updateActionBtnText: {
+    color: '#ffffff',
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.bold,
+  },
+  bottomCurrentVersionText: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 8,
+    fontWeight: fontWeights.medium,
+  },
+
+  /* When Up-to-date: Version Info & Check Button */
+  versionCheckSection: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  versionInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  versionLabelText: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontWeight: fontWeights.medium,
+  },
+  versionValueText: {
+    fontSize: fontSizes.xs,
+    color: colors.textPrimary,
+    fontWeight: fontWeights.bold,
+  },
+  checkUpdateBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.full,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  checkUpdateContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  checkUpdateBtnText: {
+    fontSize: fontSizes.xs,
+    color: colors.primary,
     fontWeight: fontWeights.semibold,
   },
 });
