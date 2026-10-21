@@ -27,10 +27,6 @@ import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../theme'
 import { EpoxyHouseBrandLogo } from '../components/common/EpoxyHouseBrandLogo';
 import { WatermarkOverlay } from '../components/common/WatermarkOverlay';
 import { ToastBanner } from '../components/common/ToastBanner';
-import { CallProvider } from '../context/CallContext';
-import { IncomingCallModal } from '../components/call/IncomingCallModal';
-import { ActiveCallModal } from '../components/call/ActiveCallModal';
-import { MinimizedCallBar } from '../components/call/MinimizedCallBar';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -143,75 +139,66 @@ export const RootNavigator = () => {
   }
 
   return (
-    <CallProvider>
-      <NavigationContainer>
-        <View style={styles.rootContainer}>
-          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-            {!isAuthenticated ? (
-              <Stack.Screen name="Auth" component={AuthStack} />
-            ) : isMustChangePassword ? (
-              <Stack.Screen
-                name="ChangeFirstPassword"
-                component={ChangeFirstPasswordScreen}
-              />
-            ) : (
-              <>
-                <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-                <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
-                <Stack.Screen
-                  name="NewChat"
-                  component={NewChatScreen}
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="CreateGroup"
-                  component={CreateGroupScreen}
-                  options={{ presentation: 'modal' }}
-                />
-                <Stack.Screen
-                  name="FileViewer"
-                  component={FileViewerScreen}
-                  options={{ presentation: 'fullScreenModal' }}
-                />
-                <Stack.Screen name="UserMaster" component={UserMasterScreen} />
-                <Stack.Screen name="CreateUser" component={CreateUserScreen} />
-                <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
-                <Stack.Screen name="CompanyMaster" component={CompanyMasterScreen} />
-                <Stack.Screen name="CreateCompany" component={CreateCompanyScreen} />
-                <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
-                <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
-                <Stack.Screen name="BulkUserImport" component={BulkUserImportScreen} />
-              </>
-            )}
-          </Stack.Navigator>
-          {isAuthenticated && !isMustChangePassword && <WatermarkOverlay />}
-          <ToastBanner />
-          {isAuthenticated && !isMustChangePassword && (
+    <NavigationContainer>
+      <View style={styles.rootContainer}>
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          {!isAuthenticated ? (
+            <Stack.Screen name="Auth" component={AuthStack} />
+          ) : isMustChangePassword ? (
+            <Stack.Screen
+              name="ChangeFirstPassword"
+              component={ChangeFirstPasswordScreen}
+            />
+          ) : (
             <>
-              <IncomingCallModal />
-              <ActiveCallModal />
-              <MinimizedCallBar />
+              <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+              <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+              <Stack.Screen
+                name="NewChat"
+                component={NewChatScreen}
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="CreateGroup"
+                component={CreateGroupScreen}
+                options={{ presentation: 'modal' }}
+              />
+              <Stack.Screen
+                name="FileViewer"
+                component={FileViewerScreen}
+                options={{ presentation: 'fullScreenModal' }}
+              />
+              <Stack.Screen name="UserMaster" component={UserMasterScreen} />
+              <Stack.Screen name="CreateUser" component={CreateUserScreen} />
+              <Stack.Screen name="UserTypeMaster" component={UserTypeMasterScreen} />
+              <Stack.Screen name="CompanyMaster" component={CompanyMasterScreen} />
+              <Stack.Screen name="CreateCompany" component={CreateCompanyScreen} />
+              <Stack.Screen name="DepartmentMaster" component={DepartmentMasterScreen} />
+              <Stack.Screen name="CloudStorageMaster" component={CloudStorageMasterScreen} />
+              <Stack.Screen name="BulkUserImport" component={BulkUserImportScreen} />
             </>
           )}
-          <CompulsoryUpdateModal
-            visible={updateModalVisible}
-            latestVersion={updateInfo?.latestVersion}
-            currentVersion={CURRENT_APP_VERSION}
-            onUpdate={() => {
-              setUpdateModalVisible(false);
-              triggerApkDownload(
-                updateInfo?.downloadUrl,
-                updateInfo?.apkAvailable,
-                updateInfo?.latestVersion
-              );
-            }}
-            onClose={() => {
-              setUpdateModalVisible(false);
-            }}
-          />
-        </View>
-      </NavigationContainer>
-    </CallProvider>
+        </Stack.Navigator>
+        {isAuthenticated && !isMustChangePassword && <WatermarkOverlay />}
+        <ToastBanner />
+        <CompulsoryUpdateModal
+          visible={updateModalVisible}
+          latestVersion={updateInfo?.latestVersion}
+          currentVersion={CURRENT_APP_VERSION}
+          onUpdate={() => {
+            setUpdateModalVisible(false);
+            triggerApkDownload(
+              updateInfo?.downloadUrl,
+              updateInfo?.apkAvailable,
+              updateInfo?.latestVersion
+            );
+          }}
+          onClose={() => {
+            setUpdateModalVisible(false);
+          }}
+        />
+      </View>
+    </NavigationContainer>
   );
 };
 

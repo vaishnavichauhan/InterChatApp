@@ -579,13 +579,13 @@ export const BulkUserImportScreen: React.FC<BulkUserImportScreenProps> = ({ navi
 
               <Text style={styles.dropzoneTitle}>Upload Employee Spreadsheet</Text>
               <Text style={styles.dropzoneSubtitle}>
-                Select or browse Microsoft Excel (.xlsx, .xls) or CSV files from your device
+                Supports Microsoft Excel (.xlsx, .xls) or CSV (.csv) files up to 10MB
               </Text>
 
-              <View style={styles.autoMappingBadge}>
+              {/* <View style={styles.autoMappingBadge}>
                 <CheckIcon size={12} color="#059669" />
                 <Text style={styles.autoMappingText}>Auto Column Mapping Enabled</Text>
-              </View>
+              </View> */}
 
               <TouchableOpacity
                 style={styles.dropzoneBrowseBtn}
@@ -596,9 +596,9 @@ export const BulkUserImportScreen: React.FC<BulkUserImportScreenProps> = ({ navi
                 <Text style={styles.dropzoneBrowseBtnText}>Upload your file here</Text>
               </TouchableOpacity>
 
-              <Text style={styles.dropzoneFileLimitsText}>
+              {/* <Text style={styles.dropzoneFileLimitsText}>
                 Maximum file size: 10MB • Auto-detects company & departments
-              </Text>
+              </Text> */}
             </View>
           </View>
         )}

@@ -23,8 +23,6 @@ import { AppAvatar } from '../../components/common/AppAvatar';
 import {
   ArrowLeftIcon,
   TrashIcon,
-  PhoneIcon,
-  VideoIcon,
   InfoIcon,
   SettingsIcon,
   CheckIcon,
@@ -49,7 +47,6 @@ import {
   getGroupMembers,
 } from '../../api/chatApi';
 import { getSocket } from '../../utils/socket';
-import { useCall } from '../../context/CallContext';
 
 interface ChatDetailScreenProps {
   navigation: any;
@@ -64,7 +61,6 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
   const user = useAuthStore((state) => state.user);
   const permissions = useAuthStore((state) => state.permissions);
   const isAdmin = isUserAdminRole(user);
-  const { startCall, callStatus, endCall, cleanupCall } = useCall();
 
   const {
     activeConversation,
@@ -228,96 +224,6 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
     (whoCanPost === 'SELECTED_MEMBERS' && (Boolean(activeConversation.can_post) || isGroupAdmin));
 
   const hasWriteAccess = permissions.canChat && hasGroupWriteAccess;
-
-  const initiateVoiceCall = () => {
-    if (!pId) {
-      Alert.alert('Cannot Start Call', 'User details could not be found for this contact.');
-      return;
-    }
-    startCall({
-      toUserId: pId,
-      peerInfo: {
-        name: title,
-        avatar:
-          (activeConversation as any)?.profile_photo ||
-          (activeConversation as any)?.avatar ||
-          (matchedConv as any)?.profile_photo ||
-          (matchedConv as any)?.avatar ||
-          '',
-      },
-      type: 'audio',
-    });
-  };
-
-  const handleStartVoiceCall = () => {
-    if (callStatus === 'CALLING' || callStatus === 'CONNECTING' || callStatus === 'CONNECTED') {
-      Alert.alert(
-        'Call in Progress',
-        'You have an ongoing call session. Would you like to end it and start this call?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'End & Call',
-            style: 'destructive',
-            onPress: () => {
-              endCall(true);
-              setTimeout(() => {
-                cleanupCall();
-                initiateVoiceCall();
-              }, 400);
-            },
-          },
-        ]
-      );
-      return;
-    }
-    initiateVoiceCall();
-  };
-
-  const initiateVideoCall = () => {
-    if (!pId) {
-      Alert.alert('Cannot Start Call', 'User details could not be found for this contact.');
-      return;
-    }
-    startCall({
-      toUserId: pId,
-      peerInfo: {
-        name: title,
-        avatar:
-          (activeConversation as any)?.profile_photo ||
-          (activeConversation as any)?.avatar ||
-          (matchedConv as any)?.profile_photo ||
-          (matchedConv as any)?.avatar ||
-          '',
-      },
-      type: 'video',
-    });
-  };
-
-  const handleStartVideoCall = () => {
-    if (callStatus === 'CALLING' || callStatus === 'CONNECTING' || callStatus === 'CONNECTED') {
-      Alert.alert(
-        'Call in Progress',
-        'You have an ongoing call session. Would you like to end it and start this call?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'End & Call',
-            style: 'destructive',
-            onPress: () => {
-              endCall(true);
-              setTimeout(() => {
-                cleanupCall();
-                initiateVideoCall();
-              }, 400);
-            },
-          },
-        ]
-      );
-      return;
-    }
-    initiateVideoCall();
-  };
 
   const handleSend = async (text: string, file: FileUploadAsset | null) => {
     let attachmentId: number | null = null;
@@ -578,41 +484,6 @@ export const ChatDetailScreen: React.FC<ChatDetailScreenProps> = ({
         </View>
 
         <View style={styles.headerRight}>
-          {!isGroup && Boolean(pId) && !isActivity && !isMaster && (
-            <>
-              {/* Voice Call Button */}
-              <TouchableOpacity
-                style={[
-                  styles.callBtn,
-                  isOnline ? styles.callBtnVoiceActive : styles.callBtnOffline,
-                ]}
-                onPress={handleStartVoiceCall}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
-              >
-                <PhoneIcon
-                  size={17}
-                  color={isOnline ? '#059669' : colors.textMuted}
-                />
-              </TouchableOpacity>
-
-              {/* Video Call Button */}
-              <TouchableOpacity
-                style={[
-                  styles.callBtn,
-                  isOnline ? styles.callBtnVideoActive : styles.callBtnOffline,
-                ]}
-                onPress={handleStartVideoCall}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
-              >
-                <VideoIcon
-                  size={17}
-                  color={isOnline ? '#2563EB' : colors.textMuted}
-                />
-              </TouchableOpacity>
-            </>
-          )}
 
           {isGroup && !isActivity && isGroupAdmin && (
             <TouchableOpacity
@@ -1041,31 +912,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 10,
   },
-  callBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    zIndex: 20,
-    elevation: 20,
-  },
-  callBtnVoiceActive: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  callBtnVideoActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  callBtnOffline: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.borderLight,
-  },
-  callBtnDisabled: {
-    opacity: 0.5,
-  },
+
   infoBtn: {
     width: 36,
     height: 36,

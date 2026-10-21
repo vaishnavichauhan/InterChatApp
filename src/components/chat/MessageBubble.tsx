@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Alert, Platform, ActivityIndicator } from 'react-native';
 import { colors, fontSizes, fontWeights, spacing, borderRadius } from '../../theme';
-import { formatMessageTime, formatFileSize, getFileCategory } from '../../utils/formatters';
+import { formatMessageTime, formatMessageClock, formatMessageDate, formatFileSize, getFileCategory } from '../../utils/formatters';
 import {
   FileIcon,
   CameraIcon,
@@ -11,8 +11,6 @@ import {
   TrashIcon,
   ReplyIcon,
   BanIcon,
-  PhoneIcon,
-  VideoIcon,
   PhoneIncomingIcon,
   PhoneOutgoingIcon,
   PhoneMissedIcon,
@@ -20,7 +18,6 @@ import {
 import { ChatMessage } from '../../store/chatStore';
 import { resolveFileUrl } from '../../config/api';
 import { useAuthStore, isDeviceDownloadAllowed, isUserAdminRole } from '../../store/authStore';
-import { useCall } from '../../context/CallContext';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -36,7 +33,6 @@ const CallLogBubble: React.FC<{
   isSelf: boolean;
 }> = ({ message, isSelf }) => {
   const user = useAuthStore((state) => state.user);
-  const { startCall } = useCall();
 
   let callData: any = null;
   try {
@@ -101,20 +97,6 @@ const CallLogBubble: React.FC<{
     }
   }
 
-  const partnerTargetId = isCaller ? callData?.receiverId : callerId;
-
-  const handleCallBack = () => {
-    if (partnerTargetId) {
-      startCall({
-        toUserId: partnerTargetId,
-        peerInfo: {
-          name: message.sender_name || message.sender_username || 'User',
-        },
-        type: isVideo ? 'video' : 'audio',
-      });
-    }
-  };
-
   return (
     <View style={[styles.container, isSelf ? styles.containerSelf : styles.containerOther]}>
       <View
@@ -156,22 +138,6 @@ const CallLogBubble: React.FC<{
             {formatMessageTime(message.created_at)}
           </Text>
         </View>
-
-        {/* Right: Quick Call Back Button */}
-        {/* {Boolean(partnerTargetId) && (
-          <TouchableOpacity
-            style={[styles.callActionBtn, isMissed && styles.callActionBtnMissed]}
-            onPress={handleCallBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            {isVideo ? (
-              <VideoIcon size={16} color={isMissed ? '#ef4444' : '#10b981'} />
-            ) : (
-              <PhoneIcon size={16} color={isMissed ? '#ef4444' : '#10b981'} />
-            )}
-          </TouchableOpacity>
-        )} */}
       </View>
     </View>
   );
@@ -189,6 +155,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const permissions = useAuthStore((state) => state.permissions);
   const user = useAuthStore((state) => state.user);
   const [imageError, setImageError] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
   // If this is a call log, delegate to CallLogBubble
@@ -198,6 +165,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const isAdmin = isUserAdminRole(user);
   const canDelete = Boolean(user);
+  const msgDate = formatMessageDate(message.created_at);
+  const msgClock = formatMessageClock(message.created_at);
 
   const canDownload = Boolean(permissions.canDownload && isDeviceDownloadAllowed(user));
   const canView = permissions.canView !== false;
@@ -226,13 +195,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   } : null;
 
   const fileCategory = attachment ? getFileCategory(attachment.original_name, attachment.mime_type) : null;
-  const isImage = fileCategory === 'image';
-  const fileId = attachment?.id;
+  const ext = (attachment?.original_name?.split('?')[0]?.split('.').pop() || '').toLowerCase();
+  const isImage =
+    fileCategory === 'image' ||
+    message.message_type === 'IMAGE' ||
+    ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext) ||
+    Boolean(attachment?.mime_type && attachment.mime_type.toLowerCase().startsWith('image/'));
+  const fileId = attId || attachment?.id;
 
   const fileCategoryLabel = (
     fileCategory && fileCategory !== 'unknown'
       ? fileCategory
-      : (attachment?.original_name?.split('.').pop() || 'File')
+      : (ext || 'File')
   ).toUpperCase();
 
   const imageUrl = fileId && isImage && token
@@ -363,14 +337,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             activeOpacity={0.88}
           >
             {/* Image Preview Banner if Image */}
-            {isImage && imageUrl && !imageError && (
+            {isImage && imageUrl && (
               <View style={styles.imageBannerContainer}>
-                <Image
-                  source={{ uri: imageUrl }}
-                  style={styles.imageBanner}
-                  resizeMode="cover"
-                  onError={() => setImageError(true)}
-                />
+                {imageError ? (
+                  <View style={styles.imageFallbackContainer}>
+                    <CameraIcon size={26} color={colors.textMuted} />
+                    <Text style={styles.imageFallbackText}>Tap View to see image</Text>
+                  </View>
+                ) : (
+                  <>
+                    {isImageLoading && (
+                      <View style={styles.imageLoadingOverlay}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    )}
+                    <Image
+                      source={{
+                        uri: imageUrl,
+                        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                      }}
+                      style={styles.imageBanner}
+                      resizeMode="cover"
+                      onLoadStart={() => setIsImageLoading(true)}
+                      onLoadEnd={() => setIsImageLoading(false)}
+                      onError={(e) => {
+                        console.warn('[MessageBubble] Image preview error:', e.nativeEvent?.error);
+                        setIsImageLoading(false);
+                        setImageError(true);
+                      }}
+                    />
+                  </>
+                )}
               </View>
             )}
 
@@ -402,8 +399,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </View>
               </View>
 
-              {/* Row 2: 4. View + 5. Download Icon on Left | 6. Time on Right */}
-              <View style={styles.attachmentFooterRow}>
+              {/* Row 2: 4. View + 5. Download Icon on Left | 6. Date & Time on Right */}
+              <View style={[styles.attachmentFooterRow, isSelf && styles.attachmentFooterRowSelf]}>
                 {/* Action buttons (View & Download) */}
                 <View style={styles.attachmentActionsWrap}>
                   {canView && (
@@ -432,10 +429,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   )}
                 </View>
 
-                {/* 6. Time inside card */}
-                <Text style={styles.cardTimeText}>
-                  {formatMessageTime(message.created_at)}
-                </Text>
+                {/* 6. Date & Time inside card (aligned vertically on right to prevent cutoff) */}
+                <View style={styles.cardDateTimeWrap}>
+                  {Boolean(msgDate) && (
+                    <Text
+                      style={[styles.cardDateText, isSelf && styles.cardDateTextSelf]}
+                      numberOfLines={1}
+                    >
+                      {msgDate}
+                    </Text>
+                  )}
+                  <Text
+                    style={[styles.cardTimeText, isSelf && styles.cardTimeTextSelf]}
+                    numberOfLines={1}
+                  >
+                    {msgClock}
+                  </Text>
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -458,19 +468,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 Viewing restricted by policy
               </Text>
             </View>
-            <Text style={styles.cardTimeText}>
-              {formatMessageTime(message.created_at)}
-            </Text>
+            <View style={styles.cardDateTimeWrap}>
+              {Boolean(msgDate) && (
+                <Text
+                  style={[styles.cardDateText, isSelf && styles.cardDateTextSelf]}
+                  numberOfLines={1}
+                >
+                  {msgDate}
+                </Text>
+              )}
+              <Text
+                style={[styles.cardTimeText, isSelf && styles.cardTimeTextSelf]}
+                numberOfLines={1}
+              >
+                {msgClock}
+              </Text>
+            </View>
           </View>
         ) : null}
 
         {/* Message Caption (if accompanying text was sent with attachment) */}
         {Boolean(message.message_text) && (
-          <View style={Boolean(attachment) ? styles.captionContainer : null}>
+          <View
+            style={[
+              Boolean(attachment) && styles.captionContainer,
+              Boolean(attachment) && (isSelf ? styles.captionContainerSelf : styles.captionContainerOther),
+            ]}
+          >
             <Text
               style={[
                 styles.messageText,
-                isSelf && !attachment ? styles.messageTextSelf : styles.messageTextOther,
+                isSelf ? styles.messageTextSelf : styles.messageTextOther,
                 Boolean(attachment) && styles.messageTextWithAttachment,
               ]}
             >
@@ -481,9 +509,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <Text
                 style={[
                   styles.timeText,
-                  isSelf && !attachment ? styles.timeTextSelf : styles.timeTextOther,
-                  Boolean(attachment) && styles.timeTextWithAttachment,
+                  isSelf ? styles.timeTextSelf : styles.timeTextOther,
                 ]}
+                numberOfLines={1}
               >
                 {formatMessageTime(message.created_at)}
               </Text>
@@ -573,8 +601,8 @@ const styles = StyleSheet.create({
     padding: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
-    minWidth: 245,
-    maxWidth: 300,
+    width: 280,
+    maxWidth: '88%',
   },
   bubbleSelf: {
     backgroundColor: colors.bubbleSent,
@@ -672,13 +700,36 @@ const styles = StyleSheet.create({
   },
   imageBannerContainer: {
     width: '100%',
-    height: 165,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    height: 180,
+    backgroundColor: '#f1f5f9',
     overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageBanner: {
     width: '100%',
-    height: '100%',
+    height: 180,
+  },
+  imageLoadingOverlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(241, 245, 249, 0.7)',
+    zIndex: 2,
+  },
+  imageFallbackContainer: {
+    width: '100%',
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    gap: 6,
+  },
+  imageFallbackText: {
+    fontSize: fontSizes.xs,
+    color: colors.textMuted,
+    fontWeight: fontWeights.medium,
   },
   attachmentBody: {
     paddingHorizontal: 10,
@@ -720,15 +771,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
-    paddingTop: 4,
+    marginTop: 8,
+    paddingTop: 6,
     borderTopWidth: 0.5,
     borderTopColor: '#f1f5f9',
+  },
+  attachmentFooterRowSelf: {
+    borderTopColor: 'rgba(0, 56, 168, 0.08)',
   },
   attachmentActionsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   viewPillBtn: {
     flexDirection: 'row',
@@ -756,18 +811,50 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: colors.primaryMuted,
   },
-  cardTimeText: {
+  cardDateTimeWrap: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: 'auto',
+    paddingLeft: 8,
+    flexShrink: 1,
+  },
+  cardDateText: {
     fontSize: 9.5,
     fontWeight: fontWeights.medium,
-    marginLeft: 'auto',
-    paddingLeft: 6,
-    flexShrink: 0,
     color: '#94a3b8',
+    textAlign: 'right',
+    lineHeight: 12,
+    includeFontPadding: false,
+  },
+  cardDateTextSelf: {
+    color: '#64748b',
+  },
+  cardTimeText: {
+    fontSize: 10,
+    fontWeight: fontWeights.semibold,
+    color: '#64748b',
+    textAlign: 'right',
+    lineHeight: 13,
+    marginTop: 1,
+    includeFontPadding: false,
+  },
+  cardTimeTextSelf: {
+    color: colors.primary,
   },
   captionContainer: {
-    paddingHorizontal: 4,
-    paddingTop: 4,
-    paddingBottom: 2,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 4,
+    marginTop: 4,
+    borderRadius: borderRadius.md,
+  },
+  captionContainerSelf: {
+    backgroundColor: colors.bubbleSent,
+  },
+  captionContainerOther: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
 
   /* ── Restricted Attachment Placeholder Card ── */

@@ -30,7 +30,21 @@ export const formatTimestamp = (dateStr?: string | null): string => {
   }
 };
 
-export const formatMessageTime = (dateStr?: string | null): string => {
+export const formatMessageClock = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = String(hours).padStart(2, '0');
+  const strMinutes = String(minutes).padStart(2, '0');
+  return `${strHours}:${strMinutes} ${ampm}`;
+};
+
+export const formatMessageDate = (dateStr?: string | null): string => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '';
@@ -48,18 +62,24 @@ export const formatMessageTime = (dateStr?: string | null): string => {
     date.getMonth() === yesterday.getMonth() &&
     date.getDate() === yesterday.getDate();
 
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
   if (isSameDay) {
-    return `Today, ${timeStr}`;
+    return 'Today';
   } else if (isYesterday) {
-    return `Yesterday, ${timeStr}`;
+    return 'Yesterday';
   } else {
     const day = String(date.getDate()).padStart(2, '0');
     const month = MONTH_NAMES[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}, ${timeStr}`;
+    const isSameYear = date.getFullYear() === now.getFullYear();
+    return isSameYear ? `${day} ${month}` : `${day} ${month} ${date.getFullYear()}`;
   }
+};
+
+export const formatMessageTime = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const date = formatMessageDate(dateStr);
+  const clock = formatMessageClock(dateStr);
+  if (!date || !clock) return '';
+  return `${date}, ${clock}`;
 };
 
 export const formatFileSize = (bytes?: number): string => {
