@@ -6,7 +6,7 @@ import { BASE_SERVER_URL } from '../config/api';
 /**
  * Current App Version as defined in requirements
  */
-export const CURRENT_APP_VERSION = '01.14.10';
+export const CURRENT_APP_VERSION = '01.21.10';
 
 /**
  * Export a helper function returning the current app version

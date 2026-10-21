@@ -11,13 +11,14 @@ import {
   Platform,
   Modal,
   FlatList,
+  Share,
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
-import { pick, types } from '@react-native-documents/picker';
+import { pick, types, saveDocuments, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/common/AppHeader';
 import {
@@ -96,6 +97,7 @@ export const BulkUserImportScreen: React.FC<BulkUserImportScreenProps> = ({ navi
     message?: string;
   } | null>(null);
   const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
 
   // Load system metadata for validation and template guide
   const fetchMetadata = useCallback(async () => {
@@ -245,22 +247,74 @@ export const BulkUserImportScreen: React.FC<BulkUserImportScreenProps> = ({ navi
       XLSX.utils.book_append_sheet(wb, ws2, 'Instructions_Guide');
 
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-      const dir =
-        Platform.OS === 'android'
-          ? RNFS.DownloadDirectoryPath || RNFS.DocumentDirectoryPath
-          : RNFS.DocumentDirectoryPath;
-      const fileName = `EpoxyHouse_Employee_Import_Template.xlsx`;
-      const filePath = `${dir}/${fileName}`;
+      const fileName = 'EpoxyHouse_Employee_Import_Template.xlsx';
 
-      await RNFS.writeFile(filePath, wbout, 'base64');
+      // 1. Write to guaranteed-writable internal cache directory first (never blocked by Android scoped storage)
+      const tempDir = RNFS.CachesDirectoryPath || RNFS.DocumentDirectoryPath;
+      const tempFilePath = `${tempDir}/${fileName}`;
+      await RNFS.writeFile(tempFilePath, wbout, 'base64');
 
-      Alert.alert(
-        'Template Downloaded',
-        `Sample Excel template has been saved to:\n\n${filePath}\n\nYou can fill it with employee records and attach it here for bulk import.`
-      );
+      // 2. Open standard OS save dialog (Storage Access Framework on Android / Files Export on iOS)
+      try {
+        const sourceUri = Platform.OS === 'android' ? `file://${tempFilePath}` : tempFilePath;
+        await saveDocuments({
+          sourceUris: [sourceUri],
+          fileName: fileName,
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          copy: true,
+        });
+
+        Alert.alert(
+          'Template Saved',
+          'Sample Excel template saved successfully! You can open it in Excel/Sheets, fill in employee records, and attach it here for bulk import.'
+        );
+        return;
+      } catch (pickerErr: any) {
+        // If user tapped cancel in the system file picker, exit gracefully without showing an error
+        if (
+          (isErrorWithCode(pickerErr) && pickerErr.code === errorCodes.OPERATION_CANCELED) ||
+          pickerErr?.message?.toLowerCase?.()?.includes('cancel')
+        ) {
+          return;
+        }
+        console.warn('saveDocuments error, trying fallback saving:', pickerErr);
+      }
+
+      // 3. Fallback 1: On Android, try writing directly to DownloadDirectoryPath
+      if (Platform.OS === 'android' && RNFS.DownloadDirectoryPath) {
+        try {
+          const directPath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+          await RNFS.writeFile(directPath, wbout, 'base64');
+          Alert.alert(
+            'Template Downloaded',
+            `Sample Excel template has been saved to your Downloads folder:\n\n${fileName}\n\nYou can fill it with employee records and attach it here for bulk import.`
+          );
+          return;
+        } catch (directErr) {
+          console.warn('Direct DownloadDirectoryPath write failed:', directErr);
+        }
+      }
+
+      // 4. Fallback 2: System Share sheet (AirDrop, Email, WhatsApp, Save to Files)
+      try {
+        const shareUri = Platform.OS === 'android' ? `file://${tempFilePath}` : tempFilePath;
+        await Share.share(
+          Platform.OS === 'ios'
+            ? { url: shareUri, title: fileName }
+            : { message: `Epoxy House Employee Import Template generated at: ${tempFilePath}`, title: fileName }
+        );
+      } catch (shareErr) {
+        console.warn('Share fallback failed:', shareErr);
+        Alert.alert(
+          'Template Ready',
+          `Template created successfully at:\n\n${tempFilePath}\n\nYou can attach and import it directly.`
+        );
+      }
     } catch (err: any) {
       console.error('Template download error:', err);
       Alert.alert('Download Failed', err?.message || 'Failed to generate Excel template.');
+    } finally {
+      setIsDownloadingTemplate(false);
     }
   };
 
@@ -517,12 +571,19 @@ export const BulkUserImportScreen: React.FC<BulkUserImportScreenProps> = ({ navi
 
           <View style={styles.templateUtilityActions}>
             <TouchableOpacity
-              style={styles.utilityDownloadBtn}
+              style={[styles.utilityDownloadBtn, isDownloadingTemplate && { opacity: 0.7 }]}
               onPress={handleDownloadTemplate}
+              disabled={isDownloadingTemplate}
               activeOpacity={0.8}
             >
-              <DownloadIcon size={13} color="#ffffff" />
-              <Text style={styles.utilityDownloadBtnText}>Download (.xlsx)</Text>
+              {isDownloadingTemplate ? (
+                <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 2 }} />
+              ) : (
+                <DownloadIcon size={13} color="#ffffff" />
+              )}
+              <Text style={styles.utilityDownloadBtnText}>
+                {isDownloadingTemplate ? 'Saving...' : 'Download (.xlsx)'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
